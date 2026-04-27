@@ -4,7 +4,9 @@
 #include "DroneCompanionPawn.generated.h"
 
 class UAudioComponent;
+class UDroneCompanionBrainComponent;
 class UDroneCompanionConfigDataAsset;
+class UDroneCompanionFeedbackComponent;
 class UDroneCompanionFollowComponent;
 class UDroneCompanionSensorComponent;
 class UPointLightComponent;
@@ -47,6 +49,12 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Drone Companion|Components")
 	UDroneCompanionSensorComponent* SensorComponent;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Drone Companion|Components")
+	UDroneCompanionFeedbackComponent* FeedbackComponent;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Drone Companion|Components")
+	UDroneCompanionBrainComponent* BrainComponent;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Drone Companion|Config")
 	UDroneCompanionConfigDataAsset* Config;

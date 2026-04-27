@@ -24,8 +24,11 @@ public:
 	bool HasValidFollowTarget() const;
 
 	void SetConfig(UDroneCompanionConfigDataAsset* NewConfig);
+	void SetFollowEnabled(bool bEnabled);
+	bool IsFollowEnabled() const;
 
 private:
 	TWeakObjectPtr<AActor> FollowTarget;
 	TWeakObjectPtr<UDroneCompanionConfigDataAsset> Config;
+	bool bFollowEnabled = true;
 };

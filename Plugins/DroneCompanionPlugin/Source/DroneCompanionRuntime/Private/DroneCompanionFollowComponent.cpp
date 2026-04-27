@@ -25,7 +25,7 @@ void UDroneCompanionFollowComponent::TickComponent(float DeltaTime, ELevelTick T
 
 	AActor* Owner = GetOwner();
 	AActor* Target = GetFollowTarget();
-	if (!Owner || !Target)
+	if (!bFollowEnabled || !Owner || !Target)
 	{
 		return;
 	}
@@ -80,4 +80,14 @@ bool UDroneCompanionFollowComponent::HasValidFollowTarget() const
 void UDroneCompanionFollowComponent::SetConfig(UDroneCompanionConfigDataAsset* NewConfig)
 {
 	Config = NewConfig;
+}
+
+void UDroneCompanionFollowComponent::SetFollowEnabled(bool bEnabled)
+{
+	bFollowEnabled = bEnabled;
+}
+
+bool UDroneCompanionFollowComponent::IsFollowEnabled() const
+{
+	return bFollowEnabled;
 }

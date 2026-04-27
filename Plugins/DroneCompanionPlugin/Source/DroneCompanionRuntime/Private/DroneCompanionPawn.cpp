@@ -4,7 +4,9 @@
 #include "Components/PointLightComponent.h"
 #include "Components/SceneComponent.h"
 #include "Components/StaticMeshComponent.h"
+#include "DroneCompanionBrainComponent.h"
 #include "DroneCompanionConfigDataAsset.h"
+#include "DroneCompanionFeedbackComponent.h"
 #include "DroneCompanionFollowComponent.h"
 #include "DroneCompanionRuntimeModule.h"
 #include "DroneCompanionSensorComponent.h"
@@ -36,6 +38,8 @@ ADroneCompanionPawn::ADroneCompanionPawn()
 
 	FollowComponent = CreateDefaultSubobject<UDroneCompanionFollowComponent>(TEXT("FollowComponent"));
 	SensorComponent = CreateDefaultSubobject<UDroneCompanionSensorComponent>(TEXT("SensorComponent"));
+	FeedbackComponent = CreateDefaultSubobject<UDroneCompanionFeedbackComponent>(TEXT("FeedbackComponent"));
+	BrainComponent = CreateDefaultSubobject<UDroneCompanionBrainComponent>(TEXT("BrainComponent"));
 }
 
 void ADroneCompanionPawn::BeginPlay()
@@ -44,7 +48,7 @@ void ADroneCompanionPawn::BeginPlay()
 
 	if (!Config)
 	{
-		UE_LOG(LogDroneCompanion, Warning, TEXT("%s has no Drone Companion config asset assigned. Follow defaults will be used."), *GetName());
+		UE_LOG(LogDroneCompanion, Warning, TEXT("%s has no Drone Companion config asset assigned. Component defaults will be used."), *GetName());
 	}
 
 	if (FollowComponent)
@@ -95,10 +99,34 @@ void ADroneCompanionPawn::BeginPlay()
 	{
 		UE_LOG(LogDroneCompanion, Warning, TEXT("%s has no Drone Companion sensor component."), *GetName());
 	}
+
+	if (FeedbackComponent)
+	{
+		FeedbackComponent->InitializeFeedback(StatusLight, AudioComponent, Config);
+	}
+	else
+	{
+		UE_LOG(LogDroneCompanion, Warning, TEXT("%s has no Drone Companion feedback component."), *GetName());
+	}
+
+	if (BrainComponent)
+	{
+		BrainComponent->InitializeBrain(this, Config, FollowComponent, SensorComponent, FeedbackComponent);
+		BrainComponent->StartBrain();
+	}
+	else
+	{
+		UE_LOG(LogDroneCompanion, Warning, TEXT("%s has no Drone Companion brain component."), *GetName());
+	}
 }
 
 void ADroneCompanionPawn::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
+	if (BrainComponent)
+	{
+		BrainComponent->StopBrain();
+	}
+
 	if (SensorComponent)
 	{
 		SensorComponent->StopSensing();
