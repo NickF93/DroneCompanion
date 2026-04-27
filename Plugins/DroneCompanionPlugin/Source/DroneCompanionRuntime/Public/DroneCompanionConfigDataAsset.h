@@ -35,6 +35,18 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Drone Companion|Scanning", meta = (ClampMin = "0.0"))
 	float ScanInterval = 0.2f;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Drone Companion|Scanning")
+	bool bEnableSensorDebug = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Drone Companion|Scanning")
+	bool bRequireLineOfSightForDetection = true;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Drone Companion|Scanning", meta = (ClampMin = "0.0"))
+	float EnemyBaseScore = 100.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Drone Companion|Scanning", meta = (ClampMin = "0.0"))
+	float CollectibleBaseScore = 50.0f;
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Drone Companion|Collectibles", meta = (ClampMin = "0.0"))
 	float CollectibleHoverHeight = 120.0f;
 

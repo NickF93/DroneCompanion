@@ -6,6 +6,7 @@
 class UAudioComponent;
 class UDroneCompanionConfigDataAsset;
 class UDroneCompanionFollowComponent;
+class UDroneCompanionSensorComponent;
 class UPointLightComponent;
 class USceneComponent;
 class UStaticMeshComponent;
@@ -24,6 +25,7 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Drone Companion|Components")
 	USceneComponent* SceneRoot;
@@ -42,6 +44,9 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Drone Companion|Components")
 	UDroneCompanionFollowComponent* FollowComponent;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Drone Companion|Components")
+	UDroneCompanionSensorComponent* SensorComponent;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Drone Companion|Config")
 	UDroneCompanionConfigDataAsset* Config;
