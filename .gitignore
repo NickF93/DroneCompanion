@@ -73,3 +73,11 @@ Plugins/**/Intermediate/*
 
 # Cache files for the editor to use
 DerivedDataCache/*
+
+.vs/
+.idea/
+.sixth/
+AGENT.md
+.vscode/
+*.code-workspace
+Content/
