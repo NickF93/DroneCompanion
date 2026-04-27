@@ -17,6 +17,15 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Drone Companion|Follow", meta = (ClampMin = "0.0"))
 	float FollowHeight = 150.0f;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Drone Companion|Follow")
+	bool bAutoAcquirePlayerOnBeginPlay = true;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Drone Companion|Follow")
+	bool bEnableFollowDebug = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Drone Companion|Follow", meta = (ClampMin = "0.0"))
+	float AcceptanceRadius = 25.0f;
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Drone Companion|Movement", meta = (ClampMin = "0.0"))
 	float MoveSpeed = 600.0f;
 

@@ -5,11 +5,13 @@
 
 class UAudioComponent;
 class UDroneCompanionConfigDataAsset;
+class UDroneCompanionFollowComponent;
 class UPointLightComponent;
 class USceneComponent;
 class UStaticMeshComponent;
+class AActor;
 
-// Base pawn for the companion drone. Behavior will be added in later phases.
+// Base pawn that owns the drone presentation and runtime components.
 UCLASS(Blueprintable)
 class DRONECOMPANIONRUNTIME_API ADroneCompanionPawn : public APawn
 {
@@ -38,6 +40,12 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Drone Companion|Components")
 	UAudioComponent* AudioComponent;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Drone Companion|Components")
+	UDroneCompanionFollowComponent* FollowComponent;
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Drone Companion|Config")
 	UDroneCompanionConfigDataAsset* Config;
+
+	UPROPERTY(EditInstanceOnly, BlueprintReadOnly, Category = "Drone Companion|Follow")
+	AActor* InitialFollowTarget;
 };
