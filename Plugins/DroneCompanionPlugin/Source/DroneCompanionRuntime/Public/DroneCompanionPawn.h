@@ -6,6 +6,7 @@
 class UAudioComponent;
 class UDroneCompanionBrainComponent;
 class UDroneCompanionConfigDataAsset;
+class UDroneCompanionCombatComponent;
 class UDroneCompanionFeedbackComponent;
 class UDroneCompanionFollowComponent;
 class UDroneCompanionSensorComponent;
@@ -52,6 +53,9 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Drone Companion|Components")
 	UDroneCompanionFeedbackComponent* FeedbackComponent;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Drone Companion|Components")
+	UDroneCompanionCombatComponent* CombatComponent;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Drone Companion|Components")
 	UDroneCompanionBrainComponent* BrainComponent;

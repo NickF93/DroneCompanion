@@ -17,6 +17,20 @@ public:
 	virtual FName GetName() const = 0;
 };
 
+class FDroneCompanionAttackEnemyState final : public IDroneCompanionBrainState
+{
+public:
+	explicit FDroneCompanionAttackEnemyState(AActor* InEnemyTarget);
+
+	virtual void Enter(UDroneCompanionBrainComponent& Brain) override;
+	virtual void Exit(UDroneCompanionBrainComponent& Brain) override;
+	virtual void Tick(UDroneCompanionBrainComponent& Brain, float DeltaTime) override;
+	virtual FName GetName() const override;
+
+private:
+	TWeakObjectPtr<AActor> EnemyTarget;
+};
+
 class FDroneCompanionFollowState final : public IDroneCompanionBrainState
 {
 public:

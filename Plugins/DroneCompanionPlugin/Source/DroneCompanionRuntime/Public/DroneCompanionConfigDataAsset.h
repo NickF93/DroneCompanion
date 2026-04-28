@@ -71,6 +71,21 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Drone Companion|Combat", meta = (ClampMin = "0.0"))
 	float FireCooldown = 0.5f;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Drone Companion|Combat")
+	bool bEnableCombatDebug = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Drone Companion|Combat", meta = (ClampMin = "0.0"))
+	float CombatDamage = 10.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Drone Companion|Combat")
+	bool bApplyDamageOnHit = true;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Drone Companion|Combat", meta = (ClampMin = "0.0"))
+	float AimInterpSpeed = 8.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Drone Companion|Combat", meta = (ClampMin = "0.0", ClampMax = "180.0"))
+	float MaxFireAngleDegrees = 15.0f;
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Drone Companion|Feedback")
 	FLinearColor IdleLightColor = FLinearColor(0.0f, 0.55f, 1.0f, 1.0f);
 
@@ -88,4 +103,10 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Drone Companion|Feedback")
 	FLinearColor CombatLightColor = FLinearColor(1.0f, 0.05f, 0.0f, 1.0f);
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Drone Companion|Feedback", meta = (ClampMin = "0.0"))
+	float CombatLightIntensity = 6000.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Drone Companion|Feedback")
+	TObjectPtr<USoundBase> FireSound = nullptr;
 };

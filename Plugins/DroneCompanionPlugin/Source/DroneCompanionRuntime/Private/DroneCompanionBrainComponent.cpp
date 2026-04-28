@@ -1,6 +1,7 @@
 #include "DroneCompanionBrainComponent.h"
 
 #include "DroneCompanionBrainStates.h"
+#include "DroneCompanionCombatComponent.h"
 #include "DroneCompanionConfigDataAsset.h"
 #include "DroneCompanionFeedbackComponent.h"
 #include "DroneCompanionFollowComponent.h"
@@ -39,13 +40,15 @@ void UDroneCompanionBrainComponent::InitializeBrain(
 	UDroneCompanionConfigDataAsset* InConfig,
 	UDroneCompanionFollowComponent* InFollowComponent,
 	UDroneCompanionSensorComponent* InSensorComponent,
-	UDroneCompanionFeedbackComponent* InFeedbackComponent)
+	UDroneCompanionFeedbackComponent* InFeedbackComponent,
+	UDroneCompanionCombatComponent* InCombatComponent)
 {
 	DronePawn = InDronePawn;
 	Config = InConfig;
 	FollowComponent = InFollowComponent;
 	SensorComponent = InSensorComponent;
 	FeedbackComponent = InFeedbackComponent;
+	CombatComponent = InCombatComponent;
 }
 
 void UDroneCompanionBrainComponent::StartBrain()
@@ -139,6 +142,17 @@ void UDroneCompanionBrainComponent::TransitionToInspectCollectible(AActor* Colle
 	SetState(FDroneCompanionBrainStatePtr(new FDroneCompanionInspectCollectibleState(CollectibleTarget)));
 }
 
+void UDroneCompanionBrainComponent::TransitionToAttackEnemy(AActor* EnemyTarget)
+{
+	if (!EnemyTarget)
+	{
+		TransitionToFollow();
+		return;
+	}
+
+	SetState(FDroneCompanionBrainStatePtr(new FDroneCompanionAttackEnemyState(EnemyTarget)));
+}
+
 void UDroneCompanionBrainComponent::SetState(FDroneCompanionBrainStatePtr NewState)
 {
 	if (bIsTickingState)
@@ -193,6 +207,11 @@ bool UDroneCompanionBrainComponent::ShouldInspectCollectible(const FDroneCompani
 	return TargetInfo.TargetActor.Get() != LastCompletedInspectionTarget.Get();
 }
 
+bool UDroneCompanionBrainComponent::ShouldAttackEnemy(const FDroneCompanionTargetInfo& TargetInfo) const
+{
+	return TargetInfo.TargetType == EDroneCompanionTargetType::Enemy && TargetInfo.TargetActor.IsValid();
+}
+
 void UDroneCompanionBrainComponent::MarkCollectibleInspectionCompleted(AActor* CollectibleTarget)
 {
 	LastCompletedInspectionTarget = CollectibleTarget;
@@ -218,6 +237,11 @@ UDroneCompanionFeedbackComponent* UDroneCompanionBrainComponent::GetFeedbackComp
 	return FeedbackComponent.Get();
 }
 
+UDroneCompanionCombatComponent* UDroneCompanionBrainComponent::GetCombatComponent() const
+{
+	return CombatComponent.Get();
+}
+
 bool UDroneCompanionBrainComponent::ShouldLogBrainDebug() const
 {
 	const UDroneCompanionConfigDataAsset* ConfigAsset = Config.Get();
@@ -228,6 +252,12 @@ bool UDroneCompanionBrainComponent::ShouldDrawInspectionDebug() const
 {
 	const UDroneCompanionConfigDataAsset* ConfigAsset = Config.Get();
 	return ConfigAsset && ConfigAsset->bEnableInspectionDebug;
+}
+
+bool UDroneCompanionBrainComponent::ShouldLogCombatDebug() const
+{
+	const UDroneCompanionConfigDataAsset* ConfigAsset = Config.Get();
+	return ConfigAsset && ConfigAsset->bEnableCombatDebug;
 }
 
 void UDroneCompanionBrainComponent::LogInspectionStarted(AActor* CollectibleTarget) const
@@ -243,4 +273,28 @@ void UDroneCompanionBrainComponent::LogInspectionCompleted(AActor* CollectibleTa
 void UDroneCompanionBrainComponent::LogInspectionAborted(const TCHAR* Reason) const
 {
 	UE_LOG(LogDroneCompanion, Log, TEXT("%s aborted collectible inspection: %s."), *GetName(), Reason ? Reason : TEXT("unspecified"));
+}
+
+void UDroneCompanionBrainComponent::LogAttackStarted(AActor* EnemyTarget) const
+{
+	if (ShouldLogCombatDebug())
+	{
+		UE_LOG(LogDroneCompanion, Log, TEXT("%s started attacking enemy %s."), *GetName(), *GetNameSafe(EnemyTarget));
+	}
+}
+
+void UDroneCompanionBrainComponent::LogAttackExited(AActor* EnemyTarget) const
+{
+	if (ShouldLogCombatDebug())
+	{
+		UE_LOG(LogDroneCompanion, Log, TEXT("%s stopped attacking enemy %s."), *GetName(), *GetNameSafe(EnemyTarget));
+	}
+}
+
+void UDroneCompanionBrainComponent::LogAttackAborted(const TCHAR* Reason) const
+{
+	if (ShouldLogCombatDebug())
+	{
+		UE_LOG(LogDroneCompanion, Log, TEXT("%s aborted enemy attack: %s."), *GetName(), Reason ? Reason : TEXT("unspecified"));
+	}
 }

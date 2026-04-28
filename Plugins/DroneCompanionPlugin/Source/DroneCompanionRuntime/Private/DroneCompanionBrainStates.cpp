@@ -2,16 +2,20 @@
 
 #include "DrawDebugHelpers.h"
 #include "DroneCompanionBrainComponent.h"
+#include "DroneCompanionCombatComponent.h"
 #include "DroneCompanionConfigDataAsset.h"
 #include "DroneCompanionFeedbackComponent.h"
 #include "DroneCompanionFollowComponent.h"
 #include "DroneCompanionTargetTypes.h"
 #include "GameFramework/Actor.h"
+#include "Math/Rotator.h"
 #include "Math/UnrealMathUtility.h"
 #include "Math/Vector.h"
+#include "UObject/UObjectGlobals.h"
 
 namespace DroneCompanionBrainStateNames
 {
+	const FName AttackEnemy(TEXT("AttackEnemy"));
 	const FName Follow(TEXT("Follow"));
 	const FName InspectCollectible(TEXT("InspectCollectible"));
 }
@@ -22,6 +26,12 @@ namespace DroneCompanionInspectionDefaults
 	constexpr float CollectibleHoverHeight = 120.0f;
 	constexpr float InspectDuration = 2.0f;
 	constexpr float InspectAcceptanceRadius = 40.0f;
+}
+
+namespace DroneCompanionAttackDefaults
+{
+	constexpr float AimInterpSpeed = 8.0f;
+	constexpr float MaxFireAngleDegrees = 15.0f;
 }
 
 void FDroneCompanionBrainStateDeleter::operator()(IDroneCompanionBrainState* State) const
@@ -51,6 +61,12 @@ void FDroneCompanionFollowState::Tick(UDroneCompanionBrainComponent& Brain, floa
 	FDroneCompanionTargetInfo BestTargetInfo;
 	if (!Brain.GetCachedBestTargetInfo(BestTargetInfo))
 	{
+		return;
+	}
+
+	if (Brain.ShouldAttackEnemy(BestTargetInfo))
+	{
+		Brain.TransitionToAttackEnemy(BestTargetInfo.TargetActor.Get());
 		return;
 	}
 
@@ -117,7 +133,7 @@ void FDroneCompanionInspectCollectibleState::Tick(UDroneCompanionBrainComponent&
 	if (BestTargetInfo.TargetType == EDroneCompanionTargetType::Enemy)
 	{
 		Brain.LogInspectionAborted(TEXT("enemy became the best target"));
-		Brain.TransitionToFollow();
+		Brain.TransitionToAttackEnemy(BestTargetInfo.TargetActor.Get());
 		return;
 	}
 
@@ -160,4 +176,114 @@ void FDroneCompanionInspectCollectibleState::Tick(UDroneCompanionBrainComponent&
 FName FDroneCompanionInspectCollectibleState::GetName() const
 {
 	return DroneCompanionBrainStateNames::InspectCollectible;
+}
+
+FDroneCompanionAttackEnemyState::FDroneCompanionAttackEnemyState(AActor* InEnemyTarget)
+	: EnemyTarget(InEnemyTarget)
+{
+}
+
+void FDroneCompanionAttackEnemyState::Enter(UDroneCompanionBrainComponent& Brain)
+{
+	if (UDroneCompanionFollowComponent* Follow = Brain.GetFollowComponent())
+	{
+		Follow->SetFollowEnabled(false);
+	}
+
+	if (UDroneCompanionFeedbackComponent* Feedback = Brain.GetFeedbackComponent())
+	{
+		Feedback->SetCombatFeedback();
+	}
+
+	Brain.LogAttackStarted(EnemyTarget.Get());
+}
+
+void FDroneCompanionAttackEnemyState::Exit(UDroneCompanionBrainComponent& Brain)
+{
+	if (UDroneCompanionFeedbackComponent* Feedback = Brain.GetFeedbackComponent())
+	{
+		Feedback->StopCombatFeedback();
+	}
+
+	Brain.LogAttackExited(EnemyTarget.Get());
+}
+
+void FDroneCompanionAttackEnemyState::Tick(UDroneCompanionBrainComponent& Brain, float DeltaTime)
+{
+	AActor* DroneActor = Brain.GetDroneActor();
+	AActor* TargetActor = EnemyTarget.Get();
+	if (!IsValid(DroneActor) || !IsValid(TargetActor))
+	{
+		Brain.LogAttackAborted(TEXT("enemy target is invalid"));
+		Brain.TransitionToFollow();
+		return;
+	}
+
+	FDroneCompanionTargetInfo BestTargetInfo;
+	if (!Brain.GetCachedBestTargetInfo(BestTargetInfo) || !Brain.ShouldAttackEnemy(BestTargetInfo))
+	{
+		Brain.LogAttackAborted(TEXT("sensor no longer reports an enemy as best target"));
+		Brain.TransitionToFollow();
+		return;
+	}
+
+	if (BestTargetInfo.TargetActor.Get() != TargetActor)
+	{
+		Brain.LogAttackAborted(TEXT("enemy is no longer the best target"));
+		Brain.TransitionToFollow();
+		return;
+	}
+
+	UDroneCompanionCombatComponent* Combat = Brain.GetCombatComponent();
+	if (!Combat)
+	{
+		Brain.LogAttackAborted(TEXT("combat component is missing"));
+		Brain.TransitionToFollow();
+		return;
+	}
+
+	if (!Combat->IsTargetInRange(TargetActor))
+	{
+		Brain.LogAttackAborted(TEXT("enemy is outside attack range"));
+		Brain.TransitionToFollow();
+		return;
+	}
+
+	if (!Combat->HasClearShot(TargetActor))
+	{
+		Brain.LogAttackAborted(TEXT("enemy line of sight is blocked"));
+		Brain.TransitionToFollow();
+		return;
+	}
+
+	const UDroneCompanionConfigDataAsset* Config = Brain.GetConfig();
+	const float AimInterpSpeed = FMath::Max(Config ? Config->AimInterpSpeed : DroneCompanionAttackDefaults::AimInterpSpeed, 0.0f);
+	const float MaxFireAngleDegrees = FMath::Clamp(Config ? Config->MaxFireAngleDegrees : DroneCompanionAttackDefaults::MaxFireAngleDegrees, 0.0f, 180.0f);
+
+	const FVector DirectionToTarget = (TargetActor->GetActorLocation() - DroneActor->GetActorLocation()).GetSafeNormal();
+	if (DirectionToTarget.IsNearlyZero())
+	{
+		return;
+	}
+
+	const FRotator DesiredRotation = DirectionToTarget.Rotation();
+	const FRotator NewRotation = FMath::RInterpTo(DroneActor->GetActorRotation(), DesiredRotation, DeltaTime, AimInterpSpeed);
+	DroneActor->SetActorRotation(NewRotation, ETeleportType::None);
+
+	const float FacingDot = FVector::DotProduct(DroneActor->GetActorForwardVector(), DirectionToTarget);
+	const float FacingAngleDegrees = FMath::RadiansToDegrees(FMath::Acos(FMath::Clamp(FacingDot, -1.0f, 1.0f)));
+	if (FacingAngleDegrees <= MaxFireAngleDegrees && Combat->CanFire())
+	{
+		if (UDroneCompanionFeedbackComponent* Feedback = Brain.GetFeedbackComponent())
+		{
+			Feedback->PlayFireFeedback();
+		}
+
+		Combat->TryFireAtTarget(TargetActor);
+	}
+}
+
+FName FDroneCompanionAttackEnemyState::GetName() const
+{
+	return DroneCompanionBrainStateNames::AttackEnemy;
 }

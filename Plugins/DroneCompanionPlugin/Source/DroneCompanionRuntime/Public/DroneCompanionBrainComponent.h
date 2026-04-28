@@ -11,11 +11,13 @@ class AActor;
 class ADroneCompanionPawn;
 class IDroneCompanionBrainState;
 class UDroneCompanionBrainComponent;
+class UDroneCompanionCombatComponent;
 class UDroneCompanionConfigDataAsset;
 class UDroneCompanionFeedbackComponent;
 class UDroneCompanionFollowComponent;
 class UDroneCompanionSensorComponent;
 
+class FDroneCompanionAttackEnemyState;
 class FDroneCompanionFollowState;
 class FDroneCompanionInspectCollectibleState;
 
@@ -26,7 +28,7 @@ struct DRONECOMPANIONRUNTIME_API FDroneCompanionBrainStateDeleter
 
 using FDroneCompanionBrainStatePtr = TUniquePtr<IDroneCompanionBrainState, FDroneCompanionBrainStateDeleter>;
 
-// Coordinates high-level drone behavior without implementing sensing or combat.
+// Coordinates high-level drone behavior without implementing sensing or weapon logic.
 UCLASS(ClassGroup = (DroneCompanion))
 class DRONECOMPANIONRUNTIME_API UDroneCompanionBrainComponent : public UActorComponent
 {
@@ -43,13 +45,15 @@ public:
 		UDroneCompanionConfigDataAsset* InConfig,
 		UDroneCompanionFollowComponent* InFollowComponent,
 		UDroneCompanionSensorComponent* InSensorComponent,
-		UDroneCompanionFeedbackComponent* InFeedbackComponent);
+		UDroneCompanionFeedbackComponent* InFeedbackComponent,
+		UDroneCompanionCombatComponent* InCombatComponent);
 
 	void StartBrain();
 	void StopBrain();
 	FName GetCurrentStateName() const;
 
 private:
+	friend class FDroneCompanionAttackEnemyState;
 	friend class FDroneCompanionFollowState;
 	friend class FDroneCompanionInspectCollectibleState;
 
@@ -58,28 +62,36 @@ private:
 
 	void TransitionToFollow();
 	void TransitionToInspectCollectible(AActor* CollectibleTarget);
+	void TransitionToAttackEnemy(AActor* EnemyTarget);
 	void SetState(FDroneCompanionBrainStatePtr NewState);
 	void ApplyState(FDroneCompanionBrainStatePtr NewState);
 
 	bool GetCachedBestTargetInfo(FDroneCompanionTargetInfo& OutTargetInfo) const;
 	bool ShouldInspectCollectible(const FDroneCompanionTargetInfo& TargetInfo) const;
+	bool ShouldAttackEnemy(const FDroneCompanionTargetInfo& TargetInfo) const;
 	void MarkCollectibleInspectionCompleted(AActor* CollectibleTarget);
 	AActor* GetDroneActor() const;
 	UDroneCompanionConfigDataAsset* GetConfig() const;
 	UDroneCompanionFollowComponent* GetFollowComponent() const;
 	UDroneCompanionFeedbackComponent* GetFeedbackComponent() const;
+	UDroneCompanionCombatComponent* GetCombatComponent() const;
 
 	bool ShouldLogBrainDebug() const;
 	bool ShouldDrawInspectionDebug() const;
+	bool ShouldLogCombatDebug() const;
 	void LogInspectionStarted(AActor* CollectibleTarget) const;
 	void LogInspectionCompleted(AActor* CollectibleTarget) const;
 	void LogInspectionAborted(const TCHAR* Reason) const;
+	void LogAttackStarted(AActor* EnemyTarget) const;
+	void LogAttackExited(AActor* EnemyTarget) const;
+	void LogAttackAborted(const TCHAR* Reason) const;
 
 	TWeakObjectPtr<ADroneCompanionPawn> DronePawn;
 	TWeakObjectPtr<UDroneCompanionConfigDataAsset> Config;
 	TWeakObjectPtr<UDroneCompanionFollowComponent> FollowComponent;
 	TWeakObjectPtr<UDroneCompanionSensorComponent> SensorComponent;
 	TWeakObjectPtr<UDroneCompanionFeedbackComponent> FeedbackComponent;
+	TWeakObjectPtr<UDroneCompanionCombatComponent> CombatComponent;
 	TWeakObjectPtr<AActor> LastCompletedInspectionTarget;
 
 	FDroneCompanionBrainStatePtr CurrentState;

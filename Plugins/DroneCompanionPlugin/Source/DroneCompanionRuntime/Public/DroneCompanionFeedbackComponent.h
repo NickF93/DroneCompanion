@@ -21,6 +21,9 @@ public:
 	void SetIdleFeedback();
 	void PlayCollectibleFeedback();
 	void StopCollectibleFeedback();
+	void SetCombatFeedback();
+	void PlayFireFeedback();
+	void StopCombatFeedback();
 
 private:
 	TWeakObjectPtr<UPointLightComponent> StatusLight;

@@ -5,6 +5,7 @@
 #include "Components/SceneComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "DroneCompanionBrainComponent.h"
+#include "DroneCompanionCombatComponent.h"
 #include "DroneCompanionConfigDataAsset.h"
 #include "DroneCompanionFeedbackComponent.h"
 #include "DroneCompanionFollowComponent.h"
@@ -39,6 +40,7 @@ ADroneCompanionPawn::ADroneCompanionPawn()
 	FollowComponent = CreateDefaultSubobject<UDroneCompanionFollowComponent>(TEXT("FollowComponent"));
 	SensorComponent = CreateDefaultSubobject<UDroneCompanionSensorComponent>(TEXT("SensorComponent"));
 	FeedbackComponent = CreateDefaultSubobject<UDroneCompanionFeedbackComponent>(TEXT("FeedbackComponent"));
+	CombatComponent = CreateDefaultSubobject<UDroneCompanionCombatComponent>(TEXT("CombatComponent"));
 	BrainComponent = CreateDefaultSubobject<UDroneCompanionBrainComponent>(TEXT("BrainComponent"));
 }
 
@@ -109,9 +111,18 @@ void ADroneCompanionPawn::BeginPlay()
 		UE_LOG(LogDroneCompanion, Warning, TEXT("%s has no Drone Companion feedback component."), *GetName());
 	}
 
+	if (CombatComponent)
+	{
+		CombatComponent->InitializeCombat(MuzzlePoint, Config);
+	}
+	else
+	{
+		UE_LOG(LogDroneCompanion, Warning, TEXT("%s has no Drone Companion combat component."), *GetName());
+	}
+
 	if (BrainComponent)
 	{
-		BrainComponent->InitializeBrain(this, Config, FollowComponent, SensorComponent, FeedbackComponent);
+		BrainComponent->InitializeBrain(this, Config, FollowComponent, SensorComponent, FeedbackComponent, CombatComponent);
 		BrainComponent->StartBrain();
 	}
 	else
