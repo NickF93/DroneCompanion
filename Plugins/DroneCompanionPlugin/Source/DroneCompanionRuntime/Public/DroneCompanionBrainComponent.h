@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Containers/UnrealString.h"
 #include "Components/ActorComponent.h"
 #include "DroneCompanionTargetTypes.h"
 #include "Templates/UniquePtr.h"
@@ -51,6 +52,7 @@ public:
 	void StartBrain();
 	void StopBrain();
 	FName GetCurrentStateName() const;
+	FString GetDebugStatusString() const;
 
 private:
 	friend class FDroneCompanionAttackEnemyState;

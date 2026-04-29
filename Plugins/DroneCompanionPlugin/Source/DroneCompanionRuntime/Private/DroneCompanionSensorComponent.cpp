@@ -12,6 +12,7 @@
 #include "GameFramework/Actor.h"
 #include "Math/UnrealMathUtility.h"
 #include "Math/Vector.h"
+#include "UObject/UObjectGlobals.h"
 
 namespace DroneCompanionSensorDefaults
 {
@@ -22,6 +23,11 @@ namespace DroneCompanionSensorDefaults
 	constexpr float CollectibleBaseScore = 50.0f;
 	constexpr float MaximumDistanceScore = 10.0f;
 	constexpr bool bRequireLineOfSight = true;
+
+	float PositiveOrDefault(float Value, float DefaultValue)
+	{
+		return Value > 0.0f ? Value : DefaultValue;
+	}
 }
 
 UDroneCompanionSensorComponent::UDroneCompanionSensorComponent()
@@ -65,7 +71,7 @@ void UDroneCompanionSensorComponent::ScanForTargets()
 {
 	AActor* Owner = GetOwner();
 	UWorld* World = GetWorld();
-	if (!Owner || !World)
+	if (!IsValid(Owner) || !World)
 	{
 		UpdateBestTarget(FDroneCompanionTargetInfo(), false);
 		return;
@@ -101,7 +107,7 @@ void UDroneCompanionSensorComponent::ScanForTargets()
 	for (const FOverlapResult& Overlap : Overlaps)
 	{
 		AActor* Candidate = Overlap.GetActor();
-		if (!Candidate || Candidate == Owner || ProcessedActors.Contains(Candidate))
+		if (!IsValid(Candidate) || Candidate == Owner || ProcessedActors.Contains(Candidate))
 		{
 			continue;
 		}
@@ -184,13 +190,19 @@ void UDroneCompanionSensorComponent::SetConfig(UDroneCompanionConfigDataAsset* N
 float UDroneCompanionSensorComponent::GetScanRadius() const
 {
 	const UDroneCompanionConfigDataAsset* ConfigAsset = Config.Get();
-	return FMath::Max(ConfigAsset ? ConfigAsset->ScanRadius : DroneCompanionSensorDefaults::ScanRadius, 0.0f);
+	return ConfigAsset
+		? DroneCompanionSensorDefaults::PositiveOrDefault(ConfigAsset->ScanRadius, DroneCompanionSensorDefaults::ScanRadius)
+		: DroneCompanionSensorDefaults::ScanRadius;
 }
 
 float UDroneCompanionSensorComponent::GetScanInterval() const
 {
 	const UDroneCompanionConfigDataAsset* ConfigAsset = Config.Get();
-	return FMath::Max(ConfigAsset ? ConfigAsset->ScanInterval : DroneCompanionSensorDefaults::ScanInterval, DroneCompanionSensorDefaults::MinimumScanInterval);
+	const float ScanInterval = ConfigAsset
+		? DroneCompanionSensorDefaults::PositiveOrDefault(ConfigAsset->ScanInterval, DroneCompanionSensorDefaults::ScanInterval)
+		: DroneCompanionSensorDefaults::ScanInterval;
+
+	return FMath::Max(ScanInterval, DroneCompanionSensorDefaults::MinimumScanInterval);
 }
 
 bool UDroneCompanionSensorComponent::ShouldRequireLineOfSight() const
@@ -200,6 +212,12 @@ bool UDroneCompanionSensorComponent::ShouldRequireLineOfSight() const
 }
 
 bool UDroneCompanionSensorComponent::ShouldDrawDebug() const
+{
+	const UDroneCompanionConfigDataAsset* ConfigAsset = Config.Get();
+	return ConfigAsset && ConfigAsset->bEnableSensorDebug;
+}
+
+bool UDroneCompanionSensorComponent::ShouldLogSensorDebug() const
 {
 	const UDroneCompanionConfigDataAsset* ConfigAsset = Config.Get();
 	return ConfigAsset && ConfigAsset->bEnableSensorDebug;
@@ -225,7 +243,7 @@ float UDroneCompanionSensorComponent::GetBaseScore(EDroneCompanionTargetType Tar
 bool UDroneCompanionSensorComponent::HasLineOfSightToTarget(AActor* Owner, AActor* Candidate, FVector CandidateLocation) const
 {
 	UWorld* World = GetWorld();
-	if (!World || !Owner || !Candidate)
+	if (!World || !IsValid(Owner) || !IsValid(Candidate))
 	{
 		return false;
 	}
@@ -257,7 +275,7 @@ void UDroneCompanionSensorComponent::UpdateBestTarget(const FDroneCompanionTarge
 	AActor* PreviousTarget = BestTargetInfo.TargetActor.Get();
 	const EDroneCompanionTargetType PreviousType = BestTargetInfo.TargetType;
 
-	if (!bFoundTarget)
+	if (!bFoundTarget || !NewBestTarget.TargetActor.IsValid())
 	{
 		BestTargetInfo = FDroneCompanionTargetInfo();
 		bHasBestTarget = false;
@@ -265,7 +283,10 @@ void UDroneCompanionSensorComponent::UpdateBestTarget(const FDroneCompanionTarge
 		if (bHadStoredTarget)
 		{
 			OnBestTargetLost.Broadcast();
-			UE_LOG(LogDroneCompanion, Log, TEXT("%s lost its best target."), *GetName());
+			if (ShouldLogSensorDebug())
+			{
+				UE_LOG(LogDroneCompanion, Log, TEXT("%s lost its best target."), *GetName());
+			}
 		}
 
 		return;
@@ -278,7 +299,10 @@ void UDroneCompanionSensorComponent::UpdateBestTarget(const FDroneCompanionTarge
 	if (!bHadStoredTarget || PreviousTarget != NewTarget || PreviousType != BestTargetInfo.TargetType)
 	{
 		OnBestTargetChanged.Broadcast(BestTargetInfo);
-		UE_LOG(LogDroneCompanion, Log, TEXT("%s best target changed to %s."), *GetName(), *GetNameSafe(NewTarget));
+		if (ShouldLogSensorDebug())
+		{
+			UE_LOG(LogDroneCompanion, Log, TEXT("%s best target changed to %s."), *GetName(), *GetNameSafe(NewTarget));
+		}
 	}
 }
 

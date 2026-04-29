@@ -41,6 +41,7 @@ private:
 	float GetScanInterval() const;
 	bool ShouldRequireLineOfSight() const;
 	bool ShouldDrawDebug() const;
+	bool ShouldLogSensorDebug() const;
 	float GetBaseScore(EDroneCompanionTargetType TargetType) const;
 	bool HasLineOfSightToTarget(AActor* Owner, AActor* Candidate, FVector CandidateLocation) const;
 	float CalculateScore(EDroneCompanionTargetType TargetType, float Distance, float PriorityBonus, float ScanRadius) const;

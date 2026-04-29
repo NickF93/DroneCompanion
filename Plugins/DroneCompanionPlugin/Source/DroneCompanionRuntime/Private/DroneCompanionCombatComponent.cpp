@@ -19,6 +19,11 @@ namespace DroneCompanionCombatDefaults
 	constexpr float FireCooldown = 0.5f;
 	constexpr float CombatDamage = 10.0f;
 	constexpr bool bApplyDamageOnHit = true;
+
+	float PositiveOrDefault(float Value, float DefaultValue)
+	{
+		return Value > 0.0f ? Value : DefaultValue;
+	}
 }
 
 UDroneCompanionCombatComponent::UDroneCompanionCombatComponent()
@@ -40,7 +45,7 @@ bool UDroneCompanionCombatComponent::CanFire() const
 
 bool UDroneCompanionCombatComponent::IsTargetInRange(AActor* TargetActor) const
 {
-	if (!IsValid(TargetActor))
+	if (!IsValid(GetOwner()) || !IsValid(TargetActor))
 	{
 		return false;
 	}
@@ -135,7 +140,9 @@ FVector UDroneCompanionCombatComponent::GetFireStartLocation() const
 float UDroneCompanionCombatComponent::GetAttackRange() const
 {
 	const UDroneCompanionConfigDataAsset* ConfigAsset = Config.Get();
-	return FMath::Max(ConfigAsset ? ConfigAsset->AttackRange : DroneCompanionCombatDefaults::AttackRange, 0.0f);
+	return ConfigAsset
+		? DroneCompanionCombatDefaults::PositiveOrDefault(ConfigAsset->AttackRange, DroneCompanionCombatDefaults::AttackRange)
+		: DroneCompanionCombatDefaults::AttackRange;
 }
 
 float UDroneCompanionCombatComponent::GetFireCooldown() const

@@ -5,6 +5,7 @@
 #include "GameFramework/Actor.h"
 #include "Math/UnrealMathUtility.h"
 #include "Math/Vector.h"
+#include "UObject/UObjectGlobals.h"
 
 namespace DroneCompanionFollowDefaults
 {
@@ -12,6 +13,11 @@ namespace DroneCompanionFollowDefaults
 	constexpr float FollowHeight = 150.0f;
 	constexpr float MoveSpeed = 600.0f;
 	constexpr float AcceptanceRadius = 25.0f;
+
+	float PositiveOrDefault(float Value, float DefaultValue)
+	{
+		return Value > 0.0f ? Value : DefaultValue;
+	}
 }
 
 UDroneCompanionFollowComponent::UDroneCompanionFollowComponent()
@@ -25,16 +31,16 @@ void UDroneCompanionFollowComponent::TickComponent(float DeltaTime, ELevelTick T
 
 	AActor* Owner = GetOwner();
 	AActor* Target = GetFollowTarget();
-	if (!bFollowEnabled || !Owner || !Target)
+	if (!bFollowEnabled || !IsValid(Owner) || !IsValid(Target))
 	{
 		return;
 	}
 
 	const UDroneCompanionConfigDataAsset* ConfigAsset = Config.Get();
-	const float FollowDistance = ConfigAsset ? ConfigAsset->FollowDistance : DroneCompanionFollowDefaults::FollowDistance;
-	const float FollowHeight = ConfigAsset ? ConfigAsset->FollowHeight : DroneCompanionFollowDefaults::FollowHeight;
-	const float MoveSpeed = FMath::Max(ConfigAsset ? ConfigAsset->MoveSpeed : DroneCompanionFollowDefaults::MoveSpeed, 0.0f);
-	const float AcceptanceRadius = FMath::Max(ConfigAsset ? ConfigAsset->AcceptanceRadius : DroneCompanionFollowDefaults::AcceptanceRadius, 0.0f);
+	const float FollowDistance = ConfigAsset ? FMath::Max(ConfigAsset->FollowDistance, 0.0f) : DroneCompanionFollowDefaults::FollowDistance;
+	const float FollowHeight = ConfigAsset ? FMath::Max(ConfigAsset->FollowHeight, 0.0f) : DroneCompanionFollowDefaults::FollowHeight;
+	const float MoveSpeed = ConfigAsset ? DroneCompanionFollowDefaults::PositiveOrDefault(ConfigAsset->MoveSpeed, DroneCompanionFollowDefaults::MoveSpeed) : DroneCompanionFollowDefaults::MoveSpeed;
+	const float AcceptanceRadius = ConfigAsset ? DroneCompanionFollowDefaults::PositiveOrDefault(ConfigAsset->AcceptanceRadius, DroneCompanionFollowDefaults::AcceptanceRadius) : DroneCompanionFollowDefaults::AcceptanceRadius;
 
 	const FVector DesiredLocation = Target->GetActorLocation()
 		- Target->GetActorForwardVector() * FollowDistance

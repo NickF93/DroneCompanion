@@ -10,6 +10,23 @@
 #include "DroneCompanionSensorComponent.h"
 #include "GameFramework/Actor.h"
 
+namespace
+{
+	const TCHAR* GetTargetTypeDebugName(EDroneCompanionTargetType TargetType)
+	{
+		switch (TargetType)
+		{
+		case EDroneCompanionTargetType::Collectible:
+			return TEXT("Collectible");
+		case EDroneCompanionTargetType::Enemy:
+			return TEXT("Enemy");
+		case EDroneCompanionTargetType::None:
+		default:
+			return TEXT("None");
+		}
+	}
+}
+
 UDroneCompanionBrainComponent::UDroneCompanionBrainComponent()
 {
 	PrimaryComponentTick.bCanEverTick = true;
@@ -106,6 +123,26 @@ void UDroneCompanionBrainComponent::StopBrain()
 FName UDroneCompanionBrainComponent::GetCurrentStateName() const
 {
 	return CurrentState ? CurrentState->GetName() : NAME_None;
+}
+
+FString UDroneCompanionBrainComponent::GetDebugStatusString() const
+{
+	if (!bHasCachedBestTarget || !CachedBestTargetInfo.TargetActor.IsValid())
+	{
+		return FString::Printf(
+			TEXT("State=%s Running=%s Target=None"),
+			*GetCurrentStateName().ToString(),
+			bIsRunning ? TEXT("true") : TEXT("false"));
+	}
+
+	return FString::Printf(
+		TEXT("State=%s Running=%s Target=%s Type=%s Distance=%.1f Score=%.1f"),
+		*GetCurrentStateName().ToString(),
+		bIsRunning ? TEXT("true") : TEXT("false"),
+		*GetNameSafe(CachedBestTargetInfo.TargetActor.Get()),
+		GetTargetTypeDebugName(CachedBestTargetInfo.TargetType),
+		CachedBestTargetInfo.Distance,
+		CachedBestTargetInfo.Score);
 }
 
 void UDroneCompanionBrainComponent::HandleBestTargetChanged(const FDroneCompanionTargetInfo& TargetInfo)

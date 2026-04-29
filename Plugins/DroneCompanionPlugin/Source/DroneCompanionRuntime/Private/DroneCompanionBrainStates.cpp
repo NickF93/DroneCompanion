@@ -34,6 +34,14 @@ namespace DroneCompanionAttackDefaults
 	constexpr float MaxFireAngleDegrees = 15.0f;
 }
 
+namespace DroneCompanionBrainValue
+{
+	float PositiveOrDefault(float Value, float DefaultValue)
+	{
+		return Value > 0.0f ? Value : DefaultValue;
+	}
+}
+
 void FDroneCompanionBrainStateDeleter::operator()(IDroneCompanionBrainState* State) const
 {
 	delete State;
@@ -115,7 +123,7 @@ void FDroneCompanionInspectCollectibleState::Tick(UDroneCompanionBrainComponent&
 {
 	AActor* DroneActor = Brain.GetDroneActor();
 	AActor* TargetActor = CollectibleTarget.Get();
-	if (!DroneActor || !TargetActor)
+	if (!IsValid(DroneActor) || !IsValid(TargetActor))
 	{
 		Brain.LogInspectionAborted(TEXT("collectible target is invalid"));
 		Brain.TransitionToFollow();
@@ -138,10 +146,10 @@ void FDroneCompanionInspectCollectibleState::Tick(UDroneCompanionBrainComponent&
 	}
 
 	const UDroneCompanionConfigDataAsset* Config = Brain.GetConfig();
-	const float MoveSpeed = FMath::Max(Config ? Config->MoveSpeed : DroneCompanionInspectionDefaults::MoveSpeed, 0.0f);
-	const float HoverHeight = Config ? Config->CollectibleHoverHeight : DroneCompanionInspectionDefaults::CollectibleHoverHeight;
+	const float MoveSpeed = Config ? DroneCompanionBrainValue::PositiveOrDefault(Config->MoveSpeed, DroneCompanionInspectionDefaults::MoveSpeed) : DroneCompanionInspectionDefaults::MoveSpeed;
+	const float HoverHeight = Config ? FMath::Max(Config->CollectibleHoverHeight, 0.0f) : DroneCompanionInspectionDefaults::CollectibleHoverHeight;
 	const float InspectDuration = FMath::Max(Config ? Config->InspectDuration : DroneCompanionInspectionDefaults::InspectDuration, 0.0f);
-	const float AcceptanceRadius = FMath::Max(Config ? Config->InspectAcceptanceRadius : DroneCompanionInspectionDefaults::InspectAcceptanceRadius, 0.0f);
+	const float AcceptanceRadius = Config ? DroneCompanionBrainValue::PositiveOrDefault(Config->InspectAcceptanceRadius, DroneCompanionInspectionDefaults::InspectAcceptanceRadius) : DroneCompanionInspectionDefaults::InspectAcceptanceRadius;
 
 	const FVector DesiredLocation = TargetActor->GetActorLocation() + FVector(0.0f, 0.0f, HoverHeight);
 	const FVector CurrentLocation = DroneActor->GetActorLocation();
@@ -257,7 +265,7 @@ void FDroneCompanionAttackEnemyState::Tick(UDroneCompanionBrainComponent& Brain,
 	}
 
 	const UDroneCompanionConfigDataAsset* Config = Brain.GetConfig();
-	const float AimInterpSpeed = FMath::Max(Config ? Config->AimInterpSpeed : DroneCompanionAttackDefaults::AimInterpSpeed, 0.0f);
+	const float AimInterpSpeed = Config ? DroneCompanionBrainValue::PositiveOrDefault(Config->AimInterpSpeed, DroneCompanionAttackDefaults::AimInterpSpeed) : DroneCompanionAttackDefaults::AimInterpSpeed;
 	const float MaxFireAngleDegrees = FMath::Clamp(Config ? Config->MaxFireAngleDegrees : DroneCompanionAttackDefaults::MaxFireAngleDegrees, 0.0f, 180.0f);
 
 	const FVector DirectionToTarget = (TargetActor->GetActorLocation() - DroneActor->GetActorLocation()).GetSafeNormal();
