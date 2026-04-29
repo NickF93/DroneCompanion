@@ -1,13 +1,13 @@
-#include "DroneCompanionBrainComponent.h"
+#include "Components/DroneCompanionBrainComponent.h"
 
-#include "DroneCompanionBrainStates.h"
-#include "DroneCompanionCombatComponent.h"
-#include "DroneCompanionConfigDataAsset.h"
-#include "DroneCompanionFeedbackComponent.h"
-#include "DroneCompanionFollowComponent.h"
-#include "DroneCompanionPawn.h"
-#include "DroneCompanionRuntimeModule.h"
-#include "DroneCompanionSensorComponent.h"
+#include "Brain/DroneCompanionBrainStates.h"
+#include "Components/DroneCompanionCombatComponent.h"
+#include "Components/DroneCompanionFeedbackComponent.h"
+#include "Components/DroneCompanionFollowComponent.h"
+#include "Components/DroneCompanionSensorComponent.h"
+#include "Core/DroneCompanionConfigDataAsset.h"
+#include "Core/DroneCompanionPawn.h"
+#include "Module/DroneCompanionRuntimeModule.h"
 #include "GameFramework/Actor.h"
 
 namespace

@@ -2,7 +2,7 @@
 
 #include "Containers/Array.h"
 #include "Components/ActorComponent.h"
-#include "DroneCompanionTargetTypes.h"
+#include "Targets/DroneCompanionTargetTypes.h"
 #include "TimerManager.h"
 #include "UObject/WeakObjectPtrTemplates.h"
 #include "DroneCompanionSensorComponent.generated.h"

@@ -1,12 +1,12 @@
-#include "DroneCompanionBrainStates.h"
+#include "Brain/DroneCompanionBrainStates.h"
 
 #include "DrawDebugHelpers.h"
-#include "DroneCompanionBrainComponent.h"
-#include "DroneCompanionCombatComponent.h"
-#include "DroneCompanionConfigDataAsset.h"
-#include "DroneCompanionFeedbackComponent.h"
-#include "DroneCompanionFollowComponent.h"
-#include "DroneCompanionTargetTypes.h"
+#include "Components/DroneCompanionBrainComponent.h"
+#include "Components/DroneCompanionCombatComponent.h"
+#include "Components/DroneCompanionFeedbackComponent.h"
+#include "Components/DroneCompanionFollowComponent.h"
+#include "Core/DroneCompanionConfigDataAsset.h"
+#include "Targets/DroneCompanionTargetTypes.h"
 #include "GameFramework/Actor.h"
 #include "Math/Rotator.h"
 #include "Math/UnrealMathUtility.h"
@@ -47,14 +47,109 @@ void FDroneCompanionBrainStateDeleter::operator()(IDroneCompanionBrainState* Sta
 	delete State;
 }
 
+void IDroneCompanionBrainState::TransitionToFollow(UDroneCompanionBrainComponent& Brain)
+{
+	Brain.TransitionToFollow();
+}
+
+void IDroneCompanionBrainState::TransitionToInspectCollectible(UDroneCompanionBrainComponent& Brain, AActor* CollectibleTarget)
+{
+	Brain.TransitionToInspectCollectible(CollectibleTarget);
+}
+
+void IDroneCompanionBrainState::TransitionToAttackEnemy(UDroneCompanionBrainComponent& Brain, AActor* EnemyTarget)
+{
+	Brain.TransitionToAttackEnemy(EnemyTarget);
+}
+
+bool IDroneCompanionBrainState::GetCachedBestTargetInfo(const UDroneCompanionBrainComponent& Brain, FDroneCompanionTargetInfo& OutTargetInfo)
+{
+	return Brain.GetCachedBestTargetInfo(OutTargetInfo);
+}
+
+bool IDroneCompanionBrainState::ShouldInspectCollectible(const UDroneCompanionBrainComponent& Brain, const FDroneCompanionTargetInfo& TargetInfo)
+{
+	return Brain.ShouldInspectCollectible(TargetInfo);
+}
+
+bool IDroneCompanionBrainState::ShouldAttackEnemy(const UDroneCompanionBrainComponent& Brain, const FDroneCompanionTargetInfo& TargetInfo)
+{
+	return Brain.ShouldAttackEnemy(TargetInfo);
+}
+
+void IDroneCompanionBrainState::MarkCollectibleInspectionCompleted(UDroneCompanionBrainComponent& Brain, AActor* CollectibleTarget)
+{
+	Brain.MarkCollectibleInspectionCompleted(CollectibleTarget);
+}
+
+AActor* IDroneCompanionBrainState::GetDroneActor(const UDroneCompanionBrainComponent& Brain)
+{
+	return Brain.GetDroneActor();
+}
+
+UDroneCompanionConfigDataAsset* IDroneCompanionBrainState::GetConfig(const UDroneCompanionBrainComponent& Brain)
+{
+	return Brain.GetConfig();
+}
+
+UDroneCompanionFollowComponent* IDroneCompanionBrainState::GetFollowComponent(const UDroneCompanionBrainComponent& Brain)
+{
+	return Brain.GetFollowComponent();
+}
+
+UDroneCompanionFeedbackComponent* IDroneCompanionBrainState::GetFeedbackComponent(const UDroneCompanionBrainComponent& Brain)
+{
+	return Brain.GetFeedbackComponent();
+}
+
+UDroneCompanionCombatComponent* IDroneCompanionBrainState::GetCombatComponent(const UDroneCompanionBrainComponent& Brain)
+{
+	return Brain.GetCombatComponent();
+}
+
+bool IDroneCompanionBrainState::ShouldDrawInspectionDebug(const UDroneCompanionBrainComponent& Brain)
+{
+	return Brain.ShouldDrawInspectionDebug();
+}
+
+void IDroneCompanionBrainState::LogInspectionStarted(const UDroneCompanionBrainComponent& Brain, AActor* CollectibleTarget)
+{
+	Brain.LogInspectionStarted(CollectibleTarget);
+}
+
+void IDroneCompanionBrainState::LogInspectionCompleted(const UDroneCompanionBrainComponent& Brain, AActor* CollectibleTarget)
+{
+	Brain.LogInspectionCompleted(CollectibleTarget);
+}
+
+void IDroneCompanionBrainState::LogInspectionAborted(const UDroneCompanionBrainComponent& Brain, const TCHAR* Reason)
+{
+	Brain.LogInspectionAborted(Reason);
+}
+
+void IDroneCompanionBrainState::LogAttackStarted(const UDroneCompanionBrainComponent& Brain, AActor* EnemyTarget)
+{
+	Brain.LogAttackStarted(EnemyTarget);
+}
+
+void IDroneCompanionBrainState::LogAttackExited(const UDroneCompanionBrainComponent& Brain, AActor* EnemyTarget)
+{
+	Brain.LogAttackExited(EnemyTarget);
+}
+
+void IDroneCompanionBrainState::LogAttackAborted(const UDroneCompanionBrainComponent& Brain, const TCHAR* Reason)
+{
+	Brain.LogAttackAborted(Reason);
+}
+
 void FDroneCompanionFollowState::Enter(UDroneCompanionBrainComponent& Brain)
 {
-	if (UDroneCompanionFollowComponent* Follow = Brain.GetFollowComponent())
+	if (UDroneCompanionFollowComponent* Follow = GetFollowComponent(Brain))
 	{
 		Follow->SetFollowEnabled(true);
 	}
 
-	if (UDroneCompanionFeedbackComponent* Feedback = Brain.GetFeedbackComponent())
+	if (UDroneCompanionFeedbackComponent* Feedback = GetFeedbackComponent(Brain))
 	{
 		Feedback->SetIdleFeedback();
 	}
@@ -67,20 +162,20 @@ void FDroneCompanionFollowState::Exit(UDroneCompanionBrainComponent& Brain)
 void FDroneCompanionFollowState::Tick(UDroneCompanionBrainComponent& Brain, float DeltaTime)
 {
 	FDroneCompanionTargetInfo BestTargetInfo;
-	if (!Brain.GetCachedBestTargetInfo(BestTargetInfo))
+	if (!GetCachedBestTargetInfo(Brain, BestTargetInfo))
 	{
 		return;
 	}
 
-	if (Brain.ShouldAttackEnemy(BestTargetInfo))
+	if (ShouldAttackEnemy(Brain, BestTargetInfo))
 	{
-		Brain.TransitionToAttackEnemy(BestTargetInfo.TargetActor.Get());
+		TransitionToAttackEnemy(Brain, BestTargetInfo.TargetActor.Get());
 		return;
 	}
 
-	if (Brain.ShouldInspectCollectible(BestTargetInfo))
+	if (ShouldInspectCollectible(Brain, BestTargetInfo))
 	{
-		Brain.TransitionToInspectCollectible(BestTargetInfo.TargetActor.Get());
+		TransitionToInspectCollectible(Brain, BestTargetInfo.TargetActor.Get());
 	}
 }
 
@@ -98,22 +193,22 @@ void FDroneCompanionInspectCollectibleState::Enter(UDroneCompanionBrainComponent
 {
 	InspectElapsedTime = 0.0f;
 
-	if (UDroneCompanionFollowComponent* Follow = Brain.GetFollowComponent())
+	if (UDroneCompanionFollowComponent* Follow = GetFollowComponent(Brain))
 	{
 		Follow->SetFollowEnabled(false);
 	}
 
-	if (UDroneCompanionFeedbackComponent* Feedback = Brain.GetFeedbackComponent())
+	if (UDroneCompanionFeedbackComponent* Feedback = GetFeedbackComponent(Brain))
 	{
 		Feedback->PlayCollectibleFeedback();
 	}
 
-	Brain.LogInspectionStarted(CollectibleTarget.Get());
+	LogInspectionStarted(Brain, CollectibleTarget.Get());
 }
 
 void FDroneCompanionInspectCollectibleState::Exit(UDroneCompanionBrainComponent& Brain)
 {
-	if (UDroneCompanionFeedbackComponent* Feedback = Brain.GetFeedbackComponent())
+	if (UDroneCompanionFeedbackComponent* Feedback = GetFeedbackComponent(Brain))
 	{
 		Feedback->StopCollectibleFeedback();
 	}
@@ -121,31 +216,31 @@ void FDroneCompanionInspectCollectibleState::Exit(UDroneCompanionBrainComponent&
 
 void FDroneCompanionInspectCollectibleState::Tick(UDroneCompanionBrainComponent& Brain, float DeltaTime)
 {
-	AActor* DroneActor = Brain.GetDroneActor();
+	AActor* DroneActor = GetDroneActor(Brain);
 	AActor* TargetActor = CollectibleTarget.Get();
 	if (!IsValid(DroneActor) || !IsValid(TargetActor))
 	{
-		Brain.LogInspectionAborted(TEXT("collectible target is invalid"));
-		Brain.TransitionToFollow();
+		LogInspectionAborted(Brain, TEXT("collectible target is invalid"));
+		TransitionToFollow(Brain);
 		return;
 	}
 
 	FDroneCompanionTargetInfo BestTargetInfo;
-	if (!Brain.GetCachedBestTargetInfo(BestTargetInfo))
+	if (!GetCachedBestTargetInfo(Brain, BestTargetInfo))
 	{
-		Brain.LogInspectionAborted(TEXT("sensor lost all targets"));
-		Brain.TransitionToFollow();
+		LogInspectionAborted(Brain, TEXT("sensor lost all targets"));
+		TransitionToFollow(Brain);
 		return;
 	}
 
 	if (BestTargetInfo.TargetType == EDroneCompanionTargetType::Enemy)
 	{
-		Brain.LogInspectionAborted(TEXT("enemy became the best target"));
-		Brain.TransitionToAttackEnemy(BestTargetInfo.TargetActor.Get());
+		LogInspectionAborted(Brain, TEXT("enemy became the best target"));
+		TransitionToAttackEnemy(Brain, BestTargetInfo.TargetActor.Get());
 		return;
 	}
 
-	const UDroneCompanionConfigDataAsset* Config = Brain.GetConfig();
+	const UDroneCompanionConfigDataAsset* Config = GetConfig(Brain);
 	const float MoveSpeed = Config ? DroneCompanionBrainValue::PositiveOrDefault(Config->MoveSpeed, DroneCompanionInspectionDefaults::MoveSpeed) : DroneCompanionInspectionDefaults::MoveSpeed;
 	const float HoverHeight = Config ? FMath::Max(Config->CollectibleHoverHeight, 0.0f) : DroneCompanionInspectionDefaults::CollectibleHoverHeight;
 	const float InspectDuration = FMath::Max(Config ? Config->InspectDuration : DroneCompanionInspectionDefaults::InspectDuration, 0.0f);
@@ -164,14 +259,14 @@ void FDroneCompanionInspectCollectibleState::Tick(UDroneCompanionBrainComponent&
 		InspectElapsedTime += DeltaTime;
 		if (InspectElapsedTime >= InspectDuration)
 		{
-			Brain.MarkCollectibleInspectionCompleted(TargetActor);
-			Brain.LogInspectionCompleted(TargetActor);
-			Brain.TransitionToFollow();
+			MarkCollectibleInspectionCompleted(Brain, TargetActor);
+			LogInspectionCompleted(Brain, TargetActor);
+			TransitionToFollow(Brain);
 			return;
 		}
 	}
 
-	if (Brain.ShouldDrawInspectionDebug())
+	if (ShouldDrawInspectionDebug(Brain))
 	{
 		if (UWorld* World = DroneActor->GetWorld())
 		{
@@ -193,78 +288,78 @@ FDroneCompanionAttackEnemyState::FDroneCompanionAttackEnemyState(AActor* InEnemy
 
 void FDroneCompanionAttackEnemyState::Enter(UDroneCompanionBrainComponent& Brain)
 {
-	if (UDroneCompanionFollowComponent* Follow = Brain.GetFollowComponent())
+	if (UDroneCompanionFollowComponent* Follow = GetFollowComponent(Brain))
 	{
 		Follow->SetFollowEnabled(false);
 	}
 
-	if (UDroneCompanionFeedbackComponent* Feedback = Brain.GetFeedbackComponent())
+	if (UDroneCompanionFeedbackComponent* Feedback = GetFeedbackComponent(Brain))
 	{
 		Feedback->SetCombatFeedback();
 	}
 
-	Brain.LogAttackStarted(EnemyTarget.Get());
+	LogAttackStarted(Brain, EnemyTarget.Get());
 }
 
 void FDroneCompanionAttackEnemyState::Exit(UDroneCompanionBrainComponent& Brain)
 {
-	if (UDroneCompanionFeedbackComponent* Feedback = Brain.GetFeedbackComponent())
+	if (UDroneCompanionFeedbackComponent* Feedback = GetFeedbackComponent(Brain))
 	{
 		Feedback->StopCombatFeedback();
 	}
 
-	Brain.LogAttackExited(EnemyTarget.Get());
+	LogAttackExited(Brain, EnemyTarget.Get());
 }
 
 void FDroneCompanionAttackEnemyState::Tick(UDroneCompanionBrainComponent& Brain, float DeltaTime)
 {
-	AActor* DroneActor = Brain.GetDroneActor();
+	AActor* DroneActor = GetDroneActor(Brain);
 	AActor* TargetActor = EnemyTarget.Get();
 	if (!IsValid(DroneActor) || !IsValid(TargetActor))
 	{
-		Brain.LogAttackAborted(TEXT("enemy target is invalid"));
-		Brain.TransitionToFollow();
+		LogAttackAborted(Brain, TEXT("enemy target is invalid"));
+		TransitionToFollow(Brain);
 		return;
 	}
 
 	FDroneCompanionTargetInfo BestTargetInfo;
-	if (!Brain.GetCachedBestTargetInfo(BestTargetInfo) || !Brain.ShouldAttackEnemy(BestTargetInfo))
+	if (!GetCachedBestTargetInfo(Brain, BestTargetInfo) || !ShouldAttackEnemy(Brain, BestTargetInfo))
 	{
-		Brain.LogAttackAborted(TEXT("sensor no longer reports an enemy as best target"));
-		Brain.TransitionToFollow();
+		LogAttackAborted(Brain, TEXT("sensor no longer reports an enemy as best target"));
+		TransitionToFollow(Brain);
 		return;
 	}
 
 	if (BestTargetInfo.TargetActor.Get() != TargetActor)
 	{
-		Brain.LogAttackAborted(TEXT("enemy is no longer the best target"));
-		Brain.TransitionToFollow();
+		LogAttackAborted(Brain, TEXT("enemy is no longer the best target"));
+		TransitionToFollow(Brain);
 		return;
 	}
 
-	UDroneCompanionCombatComponent* Combat = Brain.GetCombatComponent();
+	UDroneCompanionCombatComponent* Combat = GetCombatComponent(Brain);
 	if (!Combat)
 	{
-		Brain.LogAttackAborted(TEXT("combat component is missing"));
-		Brain.TransitionToFollow();
+		LogAttackAborted(Brain, TEXT("combat component is missing"));
+		TransitionToFollow(Brain);
 		return;
 	}
 
 	if (!Combat->IsTargetInRange(TargetActor))
 	{
-		Brain.LogAttackAborted(TEXT("enemy is outside attack range"));
-		Brain.TransitionToFollow();
+		LogAttackAborted(Brain, TEXT("enemy is outside attack range"));
+		TransitionToFollow(Brain);
 		return;
 	}
 
 	if (!Combat->HasClearShot(TargetActor))
 	{
-		Brain.LogAttackAborted(TEXT("enemy line of sight is blocked"));
-		Brain.TransitionToFollow();
+		LogAttackAborted(Brain, TEXT("enemy line of sight is blocked"));
+		TransitionToFollow(Brain);
 		return;
 	}
 
-	const UDroneCompanionConfigDataAsset* Config = Brain.GetConfig();
+	const UDroneCompanionConfigDataAsset* Config = GetConfig(Brain);
 	const float AimInterpSpeed = Config ? DroneCompanionBrainValue::PositiveOrDefault(Config->AimInterpSpeed, DroneCompanionAttackDefaults::AimInterpSpeed) : DroneCompanionAttackDefaults::AimInterpSpeed;
 	const float MaxFireAngleDegrees = FMath::Clamp(Config ? Config->MaxFireAngleDegrees : DroneCompanionAttackDefaults::MaxFireAngleDegrees, 0.0f, 180.0f);
 
@@ -282,7 +377,7 @@ void FDroneCompanionAttackEnemyState::Tick(UDroneCompanionBrainComponent& Brain,
 	const float FacingAngleDegrees = FMath::RadiansToDegrees(FMath::Acos(FMath::Clamp(FacingDot, -1.0f, 1.0f)));
 	if (FacingAngleDegrees <= MaxFireAngleDegrees && Combat->CanFire())
 	{
-		if (UDroneCompanionFeedbackComponent* Feedback = Brain.GetFeedbackComponent())
+		if (UDroneCompanionFeedbackComponent* Feedback = GetFeedbackComponent(Brain))
 		{
 			Feedback->PlayFireFeedback();
 		}

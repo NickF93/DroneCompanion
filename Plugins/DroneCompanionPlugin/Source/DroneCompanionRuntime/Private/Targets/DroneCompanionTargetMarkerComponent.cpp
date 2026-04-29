@@ -1,4 +1,4 @@
-#include "DroneCompanionTargetMarkerComponent.h"
+#include "Targets/DroneCompanionTargetMarkerComponent.h"
 
 UDroneCompanionTargetMarkerComponent::UDroneCompanionTargetMarkerComponent()
 {

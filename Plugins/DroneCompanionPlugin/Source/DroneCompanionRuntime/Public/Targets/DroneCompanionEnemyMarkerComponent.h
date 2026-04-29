@@ -1,6 +1,6 @@
 #pragma once
 
-#include "DroneCompanionTargetMarkerComponent.h"
+#include "Targets/DroneCompanionTargetMarkerComponent.h"
 #include "DroneCompanionEnemyMarkerComponent.generated.h"
 
 UCLASS(ClassGroup = (DroneCompanion), meta = (BlueprintSpawnableComponent))

@@ -2,8 +2,8 @@
 
 #include "Containers/UnrealString.h"
 #include "Components/ActorComponent.h"
-#include "DroneCompanionTargetTypes.h"
 #include "Templates/UniquePtr.h"
+#include "Targets/DroneCompanionTargetTypes.h"
 #include "UObject/NameTypes.h"
 #include "UObject/WeakObjectPtrTemplates.h"
 #include "DroneCompanionBrainComponent.generated.h"
@@ -11,17 +11,13 @@
 class AActor;
 class ADroneCompanionPawn;
 class IDroneCompanionBrainState;
-class UDroneCompanionBrainComponent;
 class UDroneCompanionCombatComponent;
 class UDroneCompanionConfigDataAsset;
 class UDroneCompanionFeedbackComponent;
 class UDroneCompanionFollowComponent;
 class UDroneCompanionSensorComponent;
 
-class FDroneCompanionAttackEnemyState;
-class FDroneCompanionFollowState;
-class FDroneCompanionInspectCollectibleState;
-
+// Deletion is defined privately because UHT sees this header with only the state interface forward-declared.
 struct DRONECOMPANIONRUNTIME_API FDroneCompanionBrainStateDeleter
 {
 	void operator()(IDroneCompanionBrainState* State) const;
@@ -55,9 +51,7 @@ public:
 	FString GetDebugStatusString() const;
 
 private:
-	friend class FDroneCompanionAttackEnemyState;
-	friend class FDroneCompanionFollowState;
-	friend class FDroneCompanionInspectCollectibleState;
+	friend class IDroneCompanionBrainState;
 
 	void HandleBestTargetChanged(const FDroneCompanionTargetInfo& TargetInfo);
 	void HandleBestTargetLost();

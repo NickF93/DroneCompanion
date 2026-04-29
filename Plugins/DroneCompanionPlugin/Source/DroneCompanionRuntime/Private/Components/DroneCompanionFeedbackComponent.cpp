@@ -1,8 +1,8 @@
-#include "DroneCompanionFeedbackComponent.h"
+#include "Components/DroneCompanionFeedbackComponent.h"
 
 #include "Components/AudioComponent.h"
 #include "Components/PointLightComponent.h"
-#include "DroneCompanionConfigDataAsset.h"
+#include "Core/DroneCompanionConfigDataAsset.h"
 #include "Math/Color.h"
 #include "Math/UnrealMathUtility.h"
 #include "Sound/SoundBase.h"

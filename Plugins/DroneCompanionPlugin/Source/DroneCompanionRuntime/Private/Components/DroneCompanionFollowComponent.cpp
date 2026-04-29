@@ -1,7 +1,7 @@
-#include "DroneCompanionFollowComponent.h"
+#include "Components/DroneCompanionFollowComponent.h"
 
 #include "DrawDebugHelpers.h"
-#include "DroneCompanionConfigDataAsset.h"
+#include "Core/DroneCompanionConfigDataAsset.h"
 #include "GameFramework/Actor.h"
 #include "Math/UnrealMathUtility.h"
 #include "Math/Vector.h"

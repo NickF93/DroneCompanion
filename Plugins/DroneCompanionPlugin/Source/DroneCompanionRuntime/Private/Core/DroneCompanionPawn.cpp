@@ -1,18 +1,26 @@
-#include "DroneCompanionPawn.h"
+#include "Core/DroneCompanionPawn.h"
 
 #include "Components/AudioComponent.h"
 #include "Components/PointLightComponent.h"
 #include "Components/SceneComponent.h"
 #include "Components/StaticMeshComponent.h"
-#include "DroneCompanionBrainComponent.h"
-#include "DroneCompanionCombatComponent.h"
-#include "DroneCompanionConfigDataAsset.h"
-#include "DroneCompanionFeedbackComponent.h"
-#include "DroneCompanionFollowComponent.h"
-#include "DroneCompanionRuntimeModule.h"
-#include "DroneCompanionSensorComponent.h"
+#include "Components/DroneCompanionBrainComponent.h"
+#include "Components/DroneCompanionCombatComponent.h"
+#include "Components/DroneCompanionFeedbackComponent.h"
+#include "Components/DroneCompanionFollowComponent.h"
+#include "Components/DroneCompanionSensorComponent.h"
+#include "Core/DroneCompanionConfigDataAsset.h"
+#include "Module/DroneCompanionRuntimeModule.h"
 #include "Kismet/GameplayStatics.h"
 #include "Math/Vector.h"
+#include "UObject/UObjectGlobals.h"
+
+namespace DroneCompanionPawnDefaults
+{
+	const FVector MuzzlePointRelativeLocation(75.0f, 0.0f, 0.0f);
+	const FVector StatusLightRelativeLocation(0.0f, 0.0f, 35.0f);
+	constexpr float StatusLightInitialIntensity = 500.0f;
+}
 
 ADroneCompanionPawn::ADroneCompanionPawn()
 {
@@ -26,12 +34,12 @@ ADroneCompanionPawn::ADroneCompanionPawn()
 
 	MuzzlePoint = CreateDefaultSubobject<USceneComponent>(TEXT("MuzzlePoint"));
 	MuzzlePoint->SetupAttachment(DroneMesh);
-	MuzzlePoint->SetRelativeLocation(FVector(75.0f, 0.0f, 0.0f));
+	MuzzlePoint->SetRelativeLocation(DroneCompanionPawnDefaults::MuzzlePointRelativeLocation);
 
 	StatusLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("StatusLight"));
 	StatusLight->SetupAttachment(SceneRoot);
-	StatusLight->SetRelativeLocation(FVector(0.0f, 0.0f, 35.0f));
-	StatusLight->SetIntensity(500.0f);
+	StatusLight->SetRelativeLocation(DroneCompanionPawnDefaults::StatusLightRelativeLocation);
+	StatusLight->SetIntensity(DroneCompanionPawnDefaults::StatusLightInitialIntensity);
 
 	AudioComponent = CreateDefaultSubobject<UAudioComponent>(TEXT("AudioComponent"));
 	AudioComponent->SetupAttachment(SceneRoot);
@@ -59,10 +67,10 @@ void ADroneCompanionPawn::BeginPlay()
 
 		if (!FollowComponent->HasValidFollowTarget())
 		{
-			if (InitialFollowTarget)
+			if (IsValid(InitialFollowTarget))
 			{
 				FollowComponent->SetFollowTarget(InitialFollowTarget);
-				UE_LOG(LogDroneCompanion, Log, TEXT("%s acquired explicit follow target %s."), *GetName(), *InitialFollowTarget->GetName());
+				UE_LOG(LogDroneCompanion, Log, TEXT("%s acquired explicit follow target %s."), *GetName(), *GetNameSafe(InitialFollowTarget));
 			}
 			else
 			{

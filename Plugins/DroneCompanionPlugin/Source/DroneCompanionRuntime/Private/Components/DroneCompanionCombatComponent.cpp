@@ -1,10 +1,10 @@
-#include "DroneCompanionCombatComponent.h"
+#include "Components/DroneCompanionCombatComponent.h"
 
 #include "CollisionQueryParams.h"
 #include "Components/SceneComponent.h"
 #include "DrawDebugHelpers.h"
-#include "DroneCompanionConfigDataAsset.h"
-#include "DroneCompanionRuntimeModule.h"
+#include "Core/DroneCompanionConfigDataAsset.h"
+#include "Module/DroneCompanionRuntimeModule.h"
 #include "Engine/EngineTypes.h"
 #include "Engine/World.h"
 #include "GameFramework/Actor.h"

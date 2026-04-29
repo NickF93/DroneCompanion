@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Components/ActorComponent.h"
-#include "DroneCompanionTargetTypes.h"
+#include "Targets/DroneCompanionTargetTypes.h"
 #include "DroneCompanionTargetMarkerComponent.generated.h"
 
 // Editor marker that makes an actor visible to the drone sensor.
