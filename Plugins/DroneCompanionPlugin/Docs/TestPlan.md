@@ -7,6 +7,7 @@ This document is a practical verification checklist for the `DroneCompanion` Run
 | Area | Status |
 | --- | --- |
 | Command-line checks | To run before final submission. |
+| C++ automation tests | Added as `DroneCompanion.*`; run from command line before final submission. |
 | Manual Play-In-Editor tests | Not executed by this document. |
 | Phase 6B build after movement refactor | Rerun with Unreal Editor closed if the plugin DLL is locked. |
 
@@ -29,6 +30,27 @@ Build command:
 ```
 
 Expected result: UnrealHeaderTool processes the plugin headers, `DroneCompanionRuntime` compiles, and the command exits successfully. Close Unreal Editor first so the plugin DLL can be linked.
+
+Automation test command:
+
+```powershell
+& "G:\Program Files\Epic Games\UE_5.5\Engine\Binaries\Win64\UnrealEditor-Cmd.exe" "f:\DBGA\DroneCompanion\DroneCompanion.uproject" -ExecCmds="Automation RunTests DroneCompanion; Quit" -TestExit="Automation Test Queue Empty" -unattended -nop4 -NullRHI -NoSound -NoSplash -log
+```
+
+Expected result: all tests under `DroneCompanion.*` complete successfully. These tests are asset-free C++ automation checks and should be run with Unreal Editor closed, for the same DLL-lock reason as the build.
+
+Current strategic automation coverage:
+
+| Test Group | What It Protects |
+| --- | --- |
+| `DroneCompanion.Targets.*` | Marker defaults and target classification metadata. |
+| `DroneCompanion.Sensor.*` | Enemy priority, same-type distance scoring, marker priority bonuses, disabled/destroyed target filtering, and best-target changed/lost events. |
+| `DroneCompanion.Follow.*` | Follow pause/resume behavior and invalid move-speed fallback. |
+| `DroneCompanion.Movement.*` | Missing `UpdatedComponent` safety, reachable movement, and swept collision against a blocking wall. |
+| `DroneCompanion.Pawn.*` | Invalid collision-radius fallback on the pawn root sphere. |
+| `DroneCompanion.Combat.*` | Null/out-of-range target safety, invalid range fallback, cooldown, and blocked line traces. |
+| `DroneCompanion.Brain.*` | Follow-to-inspection transition and enemy interruption of collectible inspection. |
+| `DroneCompanion.Architecture.*` | Guard scans for direct behavior translation calls and forbidden systems in runtime source. |
 
 Static review checklist:
 
