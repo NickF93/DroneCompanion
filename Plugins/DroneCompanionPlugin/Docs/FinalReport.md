@@ -1,112 +1,143 @@
 # Drone Companion Final Report
 
-## Overview
+## Project Overview
 
-`DroneCompanion` is a Runtime C++ plugin for Unreal Engine 5.5. It implements a course-ready companion drone that follows the player, detects marked collectibles and enemies, inspects collectibles, attacks enemy targets with a simple hitscan, and returns to following when special behavior ends.
+`DroneCompanion` is a Runtime C++ plugin for Unreal Engine 5.5. It implements a small companion drone for a Game Programming course exercise: the drone follows the player, identifies simple marked targets, inspects collectibles, attacks enemies with a basic hitscan weapon, and returns to normal follow behavior when those actions end.
 
-## Project Goal
+The project deliberately stays within blockout scope. It demonstrates clear Unreal C++ component design and a few focused design patterns without relying on large AI frameworks.
 
-The goal was to build a small, explainable companion AI exercise without relying on large AI frameworks. The plugin demonstrates component-based Unreal C++ architecture, configurable behavior through a DataAsset, and a small GoF State pattern implementation suitable for a blockout Game Programming course submission.
+## Goal and Scope
+
+The goal was to build a readable companion-drone system that can be demonstrated in a simple level. The final behavior covers four visible actions:
+
+- follow Player 0;
+- sense collectible and enemy actors marked in the editor;
+- inspect collectibles by hovering above them for a configured duration;
+- attack enemies with simple hitscan fire.
+
+The implementation intentionally avoids AI Perception, Behavior Tree, StateTree, EQS, NavMesh, replication, projectile weapons, custom health systems, enemy AI, inventory logic, an Editor module, and Blueprint gameplay logic. Those systems would be reasonable in a larger game, but they would also make this course exercise harder to explain and verify.
 
 ## Runtime Plugin Rationale
 
-The feature is implemented as a Runtime plugin so the drone can be enabled, reused, and packaged independently from a specific game module. The plugin exposes editor-usable C++ types while keeping behavior inside the runtime module.
+The feature is implemented as a Runtime plugin so it is independent from a project-specific game module. The drone types can be enabled, compiled, and reused as a self-contained runtime feature. The module remains small and depends only on Unreal's core runtime modules:
 
-The module remains intentionally small and depends only on:
+| Module Dependency | Reason |
+| --- | --- |
+| `Core` | Basic Unreal types and module support. |
+| `CoreUObject` | Reflection, UObject types, DataAssets, and object references. |
+| `Engine` | Actor, component, collision, debug drawing, world, timer, and damage APIs. |
 
-- `Core`
-- `CoreUObject`
-- `Engine`
+No Editor-only module is required.
 
 ## C++ and Blueprint Split
 
-Gameplay logic is implemented in C++. Blueprint use is limited to editor-facing work:
+The runtime behavior is implemented in C++. Blueprint is reserved for editor-facing setup:
 
 - optional child Blueprint of `ADroneCompanionPawn`;
-- assigning meshes, materials, sounds, and the config DataAsset;
-- adding marker components to blockout actors.
+- visual asset assignment for the drone mesh/materials;
+- DataAsset assignment;
+- optional sound assignment through the config asset;
+- marker component placement on blockout actors.
 
-No Blueprint gameplay logic is required for the demo.
-
-## Final Feature Summary
-
-- Player-follow behavior with configurable offset, height, move speed, and acceptance radius.
-- Target sensing with sphere overlap, optional visibility line trace, marker filtering, classification, and scoring.
-- Collectible inspection that pauses follow movement, hovers above the collectible, plays feedback, waits, and returns to follow.
-- Enemy priority that interrupts collectible inspection.
-- Enemy attack behavior that faces the enemy, respects range/cooldown/fire angle, fires a simple hitscan, and optionally applies standard Unreal damage.
-- Light/audio feedback for idle, collectible, and combat states.
-- Debug drawing and logs gated by config booleans.
+Blueprint graphs are not needed for gameplay logic. This keeps the behavior inspectable in C++ and makes the architecture easier to discuss during assessment.
 
 ## Architecture Overview
 
-The pawn acts as the composition root. Runtime behavior is split across focused components, and high-level behavior is coordinated by a small brain component with private state objects.
+`ADroneCompanionPawn` acts as the composition root. It creates the default subobjects, exposes editor-visible component references, initializes the components in `BeginPlay`, and stops the runtime systems in `EndPlay`. It does not implement follow, sensing, inspection, combat, or feedback behavior itself.
 
-| Class | Responsibility |
+The main responsibilities are split as follows:
+
+| Type | Responsibility |
 | --- | --- |
-| `ADroneCompanionPawn` | Creates default subobjects, exposes editor-facing references, wires components in `BeginPlay`, and stops runtime systems in `EndPlay`. |
-| `UDroneCompanionConfigDataAsset` | Stores tunable values and optional sound references. Contains no gameplay logic. |
-| `UDroneCompanionFollowComponent` | Owns follow target storage, follow movement, and follow pause/resume. |
-| `UDroneCompanionSensorComponent` | Owns overlap scanning, line-of-sight validation, marker filtering, scoring, best-target storage, and target events. |
-| `UDroneCompanionBrainComponent` | Owns behavior orchestration, state transitions, and subscriptions to sensor events. |
-| Private brain states | Own state-specific behavior for Follow, InspectCollectible, and AttackEnemy. |
-| `UDroneCompanionFeedbackComponent` | Owns status light/audio feedback only. |
-| `UDroneCompanionCombatComponent` | Owns hitscan execution, cooldown, range checks, fire trace, and optional standard Unreal damage. |
-| Marker components | Identify actors as drone-detectable collectible or enemy targets with metadata only. |
+| `ADroneCompanionPawn` | Owns the collision root and default components; wires dependencies. |
+| `UDroneCompanionConfigDataAsset` | Stores tunable values and optional sound references. |
+| `UDroneCompanionMovementComponent` | Executes collision-aware pawn movement. |
+| `UDroneCompanionFollowComponent` | Stores the follow target and computes the desired follow position. |
+| `UDroneCompanionSensorComponent` | Scans, filters, classifies, scores, and stores the current best target. |
+| `UDroneCompanionBrainComponent` | Coordinates high-level behavior and owns state transitions. |
+| Private brain states | Implement state-specific behavior for follow, inspection, and attack. |
+| `UDroneCompanionFeedbackComponent` | Controls status light and audio feedback. |
+| `UDroneCompanionCombatComponent` | Performs range checks, cooldown checks, hitscan traces, and optional standard Unreal damage. |
+| Marker components | Mark actors as detectable collectible or enemy targets. |
 
-## GoF Patterns
+This separation keeps authority clear. The sensor never commands movement. The combat component never chooses states. The feedback component never decides behavior. The brain decides what mode the drone should be in, then delegates the actual work to the component that owns that responsibility.
 
-State is used in the private brain state classes. `Follow`, `InspectCollectible`, and `AttackEnemy` are separate behavior units with consistent `Enter`, `Exit`, `Tick`, and `GetName` methods.
+## Movement Architecture
 
-Observer is used through `UDroneCompanionSensorComponent` delegates. The brain subscribes to best-target changed and lost events, so target changes are communicated without the sensor commanding behavior.
+The movement refactor introduced a more Unreal-style pawn movement path. `ADroneCompanionPawn` now uses `CollisionComponent`, a `USphereComponent`, as its root. `DroneMesh`, `MuzzlePoint`, `StatusLight`, and `AudioComponent` are attached below that root.
 
-Facade is used in `UDroneCompanionSensorComponent`. Other classes do not need to know the details of overlaps, visibility traces, marker filtering, scoring, or best-target storage.
+Actual translation is centralized in `UDroneCompanionMovementComponent`, which derives from `UPawnMovementComponent`. Follow and collectible inspection code compute desired locations, but they do not move the actor directly. They call `MoveTowardLocation`, and the movement component moves the updated collision component with `SafeMoveUpdatedComponent`. When a blocking hit occurs, it uses `SlideAlongSurface` so simple blockout walls can stop or deflect the drone instead of being ignored.
 
-## SOLID and Authority Boundaries
+This is not a navigation system. There is no NavMesh, pathfinding, or search for alternative routes. The design is intentionally simple: it gives the drone collision-aware movement for blockout demonstrations while keeping movement authority in one place.
 
-The design emphasizes Single Responsibility and clear authority boundaries. The pawn composes systems but does not implement behavior. The sensor senses but does not move or attack. The combat component fires but does not choose states. The feedback component controls light/audio but does not decide behavior. The brain decides state transitions but delegates sensing and weapon execution to the relevant components.
-
-Public APIs are intentionally small. Internal state classes remain private to the module. The code avoids project-specific gameplay class references; targets are identified by marker components and generic `AActor` references.
-
-## Configuration
-
-`UDroneCompanionConfigDataAsset` centralizes editor-authored values for follow movement, sensing, collectible inspection, combat, feedback, and debug options. Runtime components handle missing config assets and invalid values with local named fallback constants. Config data is not modified at runtime.
+Because the pawn root changed, old child Blueprints created before this refactor may contain stale inherited component data. For a clean demo, create a fresh child Blueprint from `ADroneCompanionPawn`.
 
 ## Target Detection
 
-Targets are marked by adding `UDroneCompanionCollectibleMarkerComponent` or `UDroneCompanionEnemyMarkerComponent` to blockout actors. The sensor scans with a sphere overlap, optionally validates line of sight with `ECC_Visibility`, classifies markers, scores candidates, stores the best target, and emits C++ delegates when meaningful target changes happen.
+Targets are not hardcoded by game class. A blockout actor becomes detectable by adding one of the marker components:
 
-## Collectible Behavior
+- `UDroneCompanionCollectibleMarkerComponent`;
+- `UDroneCompanionEnemyMarkerComponent`.
 
-When a collectible is the best target, the brain enters `InspectCollectible`. Follow movement is paused, the drone moves to `CollectibleLocation + CollectibleHoverHeight`, collectible feedback is enabled, and the inspection timer counts only after the drone reaches the hover location. Invalid or lost targets return the drone to follow behavior.
+The sensor performs a timer-based sphere overlap using `ScanRadius`, ignores invalid actors and non-detectable markers, optionally validates line of sight with `ECC_Visibility`, computes a deterministic score, and stores the best target. Enemy targets normally outrank collectibles because the default enemy base score is higher than the collectible base score.
 
-## Combat Behavior
+The sensor is also the Observer source for target changes. It exposes `OnBestTargetChanged` and `OnBestTargetLost`, which the brain subscribes to.
 
-When an enemy is the best target, the brain enters `AttackEnemy`. Enemy priority interrupts collectible inspection. Follow movement is paused, the drone rotates toward the enemy, checks fire angle, range, cooldown, and clear shot, then asks the combat component to fire. The combat component performs a visibility hitscan and optionally calls `UGameplayStatics::ApplyDamage` only on a valid enemy hit.
+## Collectible Inspection
 
-## Intentional Limitations
+When the best target is a collectible, the brain enters `InspectCollectible`. Follow movement is paused, collectible feedback starts, and the state computes a hover position above the target using `CollectibleHoverHeight`. The movement component moves the drone toward that position. The inspection timer starts only after the drone reaches `InspectAcceptanceRadius`.
 
-The plugin intentionally omits AI Perception, Behavior Tree, StateTree, EQS, NavMesh, replication, projectile weapons, custom health systems, enemy AI, inventory/pickup systems, an Editor module, and Blueprint gameplay logic. These omissions keep the submission focused on a readable runtime C++ blockout exercise.
+If the collectible is lost, destroyed, or replaced by a higher-priority enemy target, the inspection state exits safely. Enemy priority can interrupt inspection directly.
 
-## Possible Future Improvements
+## Enemy Attack
 
-- Add obstacle avoidance or pathfinding if the drone must navigate complex levels.
-- Add richer feedback assets such as particles or animations.
-- Add custom target interfaces if the project later needs target-specific data.
-- Add multiplayer support and replication if required by the game mode.
-- Add designer tools in a separate Editor module if the project grows beyond the course scope.
+When the best target is an enemy, the brain enters `AttackEnemy`. The drone does not chase enemies. It pauses follow movement, faces the current enemy target, checks range, line of sight, fire cooldown, and fire angle, then asks `UDroneCompanionCombatComponent` to fire.
 
-## Final Verification Summary
+The combat component starts the hitscan trace from `MuzzlePoint` when available, falls back safely if needed, ignores the drone owner, and optionally calls `UGameplayStatics::ApplyDamage` only when the trace hits the target actor. No custom health system is introduced.
 
-Phase 7 verification was performed from `f:\DBGA\DroneCompanion`.
+## Configuration and Debugging
 
-- Source/descriptors were reviewed for forbidden systems and unnecessary dependencies.
-- `DroneCompanionRuntime.Build.cs` remained unchanged with `Core`, `CoreUObject`, and `Engine`.
-- `git diff --check` passed on April 29, 2026.
-- The UE 5.5 build passed on April 29, 2026 with this command:
+`UDroneCompanionConfigDataAsset` keeps the demo tunable without putting gameplay in Blueprint. It includes follow offsets, movement speed, collision radius, scan settings, target scoring, inspection timing, combat values, feedback colors/intensities, optional sounds, and debug booleans.
 
-```powershell
-& "G:\Program Files\Epic Games\UE_5.5\Engine\Build\BatchFiles\Build.bat" DroneCompanionEditor Win64 Development -Project="f:\DBGA\DroneCompanion\DroneCompanion.uproject" -WaitMutex -NoHotReloadFromIDE
-```
+Debug output is opt-in. Follow, movement, sensing, inspection, combat, and brain transition diagnostics each have a dedicated config toggle. With all debug options disabled, the plugin keeps logging limited to lifecycle messages and useful warnings.
 
-Manual editor playtests were not executed during this documentation pass. They are documented in `Docs/TestPlan.md` as a checklist for final demonstration evidence.
+## GoF Patterns Used
+
+### State
+
+The brain uses a small finite state machine implemented with the GoF State pattern. `IDroneCompanionBrainState` defines the state interface, and the private state classes implement the behavior:
+
+- `FDroneCompanionFollowState`;
+- `FDroneCompanionInspectCollectibleState`;
+- `FDroneCompanionAttackEnemyState`.
+
+Each state has its own `Enter`, `Exit`, `Tick`, and `GetName` methods. This keeps state-specific logic out of a large switch statement.
+
+### Observer
+
+`UDroneCompanionSensorComponent` exposes C++ multicast delegates for meaningful target changes:
+
+- `OnBestTargetChanged`;
+- `OnBestTargetLost`.
+
+The brain subscribes to those events. The sensor reports target information, but it does not decide how the drone should react.
+
+### Facade
+
+`UDroneCompanionSensorComponent` also acts as a lightweight Facade for sensing. Other classes do not need to know the details of overlap queries, marker lookup, line-of-sight traces, scoring, debug drawing, or best-target storage. They interact with a compact sensor API and the target-change delegates.
+
+## SOLID and Authority Boundaries
+
+The code favors Single Responsibility over aggressive code reuse. Some fallback constants are local to their owning component because that makes authority clearer: movement fallback values belong near movement, combat fallback values belong near combat, and sensor fallback values belong near sensing.
+
+The design avoids project-specific gameplay classes. Targets are generic `AActor` instances with marker components. Combat uses standard Unreal damage rather than a custom health system. Public APIs remain narrow, while private state classes stay internal to the runtime module.
+
+## Verification Status
+
+Earlier Phase 7 command-line verification recorded a passing `git diff --check` and a passing UE 5.5 build before the movement refactor. After the Phase 6B movement refactor, the build reached UnrealHeaderTool and C++ compilation, but the final link was blocked because `UnrealEditor.exe` was running and holding `UnrealEditor-DroneCompanionRuntime.dll`. That should be rerun with the editor closed before final submission.
+
+Manual Play-In-Editor tests are not claimed as executed by this report. They are documented as verification steps in `Docs/TestPlan.md`.
+
+## Limitations and Future Work
+
+The current movement is collision-aware but not navigational. It can stop or slide against simple blockout walls, but it will not plan a path around obstacles. Future versions could add pathfinding, richer avoidance, animation, particles, target interfaces, multiplayer support, or editor tooling. Those are intentionally outside the current course exercise scope.
