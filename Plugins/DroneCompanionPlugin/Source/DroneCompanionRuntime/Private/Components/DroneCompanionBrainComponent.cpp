@@ -4,6 +4,7 @@
 #include "Components/DroneCompanionCombatComponent.h"
 #include "Components/DroneCompanionFeedbackComponent.h"
 #include "Components/DroneCompanionFollowComponent.h"
+#include "Components/DroneCompanionMovementComponent.h"
 #include "Components/DroneCompanionSensorComponent.h"
 #include "Core/DroneCompanionConfigDataAsset.h"
 #include "Core/DroneCompanionPawn.h"
@@ -56,6 +57,7 @@ void UDroneCompanionBrainComponent::InitializeBrain(
 	ADroneCompanionPawn* InDronePawn,
 	UDroneCompanionConfigDataAsset* InConfig,
 	UDroneCompanionFollowComponent* InFollowComponent,
+	UDroneCompanionMovementComponent* InMovementComponent,
 	UDroneCompanionSensorComponent* InSensorComponent,
 	UDroneCompanionFeedbackComponent* InFeedbackComponent,
 	UDroneCompanionCombatComponent* InCombatComponent)
@@ -63,6 +65,7 @@ void UDroneCompanionBrainComponent::InitializeBrain(
 	DronePawn = InDronePawn;
 	Config = InConfig;
 	FollowComponent = InFollowComponent;
+	MovementComponent = InMovementComponent;
 	SensorComponent = InSensorComponent;
 	FeedbackComponent = InFeedbackComponent;
 	CombatComponent = InCombatComponent;
@@ -267,6 +270,11 @@ UDroneCompanionConfigDataAsset* UDroneCompanionBrainComponent::GetConfig() const
 UDroneCompanionFollowComponent* UDroneCompanionBrainComponent::GetFollowComponent() const
 {
 	return FollowComponent.Get();
+}
+
+UDroneCompanionMovementComponent* UDroneCompanionBrainComponent::GetMovementComponent() const
+{
+	return MovementComponent.Get();
 }
 
 UDroneCompanionFeedbackComponent* UDroneCompanionBrainComponent::GetFeedbackComponent() const

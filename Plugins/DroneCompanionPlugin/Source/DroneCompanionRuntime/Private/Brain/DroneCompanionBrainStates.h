@@ -27,6 +27,7 @@ protected:
 	static AActor* GetDroneActor(const UDroneCompanionBrainComponent& Brain);
 	static UDroneCompanionConfigDataAsset* GetConfig(const UDroneCompanionBrainComponent& Brain);
 	static UDroneCompanionFollowComponent* GetFollowComponent(const UDroneCompanionBrainComponent& Brain);
+	static UDroneCompanionMovementComponent* GetMovementComponent(const UDroneCompanionBrainComponent& Brain);
 	static UDroneCompanionFeedbackComponent* GetFeedbackComponent(const UDroneCompanionBrainComponent& Brain);
 	static UDroneCompanionCombatComponent* GetCombatComponent(const UDroneCompanionBrainComponent& Brain);
 	static bool ShouldDrawInspectionDebug(const UDroneCompanionBrainComponent& Brain);

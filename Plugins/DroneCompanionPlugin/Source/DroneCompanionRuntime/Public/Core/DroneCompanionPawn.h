@@ -9,9 +9,12 @@ class UDroneCompanionConfigDataAsset;
 class UDroneCompanionCombatComponent;
 class UDroneCompanionFeedbackComponent;
 class UDroneCompanionFollowComponent;
+class UDroneCompanionMovementComponent;
 class UDroneCompanionSensorComponent;
 class UPointLightComponent;
+class UPawnMovementComponent;
 class USceneComponent;
+class USphereComponent;
 class UStaticMeshComponent;
 class AActor;
 
@@ -25,13 +28,14 @@ public:
 	ADroneCompanionPawn();
 
 	virtual void Tick(float DeltaTime) override;
+	virtual UPawnMovementComponent* GetMovementComponent() const override;
 
 protected:
 	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Drone Companion|Components")
-	USceneComponent* SceneRoot;
+	USphereComponent* CollisionComponent;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Drone Companion|Components")
 	UStaticMeshComponent* DroneMesh;
@@ -44,6 +48,9 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Drone Companion|Components")
 	UAudioComponent* AudioComponent;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Drone Companion|Components")
+	UDroneCompanionMovementComponent* MovementComponent;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Drone Companion|Components")
 	UDroneCompanionFollowComponent* FollowComponent;

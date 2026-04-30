@@ -5,6 +5,7 @@
 #include "Components/DroneCompanionCombatComponent.h"
 #include "Components/DroneCompanionFeedbackComponent.h"
 #include "Components/DroneCompanionFollowComponent.h"
+#include "Components/DroneCompanionMovementComponent.h"
 #include "Core/DroneCompanionConfigDataAsset.h"
 #include "Targets/DroneCompanionTargetTypes.h"
 #include "GameFramework/Actor.h"
@@ -95,6 +96,11 @@ UDroneCompanionConfigDataAsset* IDroneCompanionBrainState::GetConfig(const UDron
 UDroneCompanionFollowComponent* IDroneCompanionBrainState::GetFollowComponent(const UDroneCompanionBrainComponent& Brain)
 {
 	return Brain.GetFollowComponent();
+}
+
+UDroneCompanionMovementComponent* IDroneCompanionBrainState::GetMovementComponent(const UDroneCompanionBrainComponent& Brain)
+{
+	return Brain.GetMovementComponent();
 }
 
 UDroneCompanionFeedbackComponent* IDroneCompanionBrainState::GetFeedbackComponent(const UDroneCompanionBrainComponent& Brain)
@@ -247,14 +253,15 @@ void FDroneCompanionInspectCollectibleState::Tick(UDroneCompanionBrainComponent&
 	const float AcceptanceRadius = Config ? DroneCompanionBrainValue::PositiveOrDefault(Config->InspectAcceptanceRadius, DroneCompanionInspectionDefaults::InspectAcceptanceRadius) : DroneCompanionInspectionDefaults::InspectAcceptanceRadius;
 
 	const FVector DesiredLocation = TargetActor->GetActorLocation() + FVector(0.0f, 0.0f, HoverHeight);
-	const FVector CurrentLocation = DroneActor->GetActorLocation();
-
-	if (FVector::DistSquared(CurrentLocation, DesiredLocation) > FMath::Square(AcceptanceRadius))
+	UDroneCompanionMovementComponent* Movement = GetMovementComponent(Brain);
+	if (!Movement)
 	{
-		const FVector NewLocation = FMath::VInterpConstantTo(CurrentLocation, DesiredLocation, DeltaTime, MoveSpeed);
-		DroneActor->SetActorLocation(NewLocation, false, nullptr, ETeleportType::None);
+		LogInspectionAborted(Brain, TEXT("movement component is missing"));
+		TransitionToFollow(Brain);
+		return;
 	}
-	else
+
+	if (Movement->MoveTowardLocation(DesiredLocation, MoveSpeed, AcceptanceRadius, DeltaTime))
 	{
 		InspectElapsedTime += DeltaTime;
 		if (InspectElapsedTime >= InspectDuration)

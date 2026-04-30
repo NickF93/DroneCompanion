@@ -32,6 +32,12 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Drone Companion|Movement", meta = (ClampMin = "0.0"))
 	float MoveSpeed = 600.0f;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Drone Companion|Movement", meta = (ClampMin = "0.0"))
+	float DroneCollisionRadius = 40.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Drone Companion|Movement")
+	bool bEnableMovementDebug = false;
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Drone Companion|Scanning", meta = (ClampMin = "0.0"))
 	float ScanRadius = 1000.0f;
 

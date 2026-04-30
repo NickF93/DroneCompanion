@@ -15,6 +15,7 @@ class UDroneCompanionCombatComponent;
 class UDroneCompanionConfigDataAsset;
 class UDroneCompanionFeedbackComponent;
 class UDroneCompanionFollowComponent;
+class UDroneCompanionMovementComponent;
 class UDroneCompanionSensorComponent;
 
 // Deletion is defined privately because UHT sees this header with only the state interface forward-declared.
@@ -41,6 +42,7 @@ public:
 		ADroneCompanionPawn* InDronePawn,
 		UDroneCompanionConfigDataAsset* InConfig,
 		UDroneCompanionFollowComponent* InFollowComponent,
+		UDroneCompanionMovementComponent* InMovementComponent,
 		UDroneCompanionSensorComponent* InSensorComponent,
 		UDroneCompanionFeedbackComponent* InFeedbackComponent,
 		UDroneCompanionCombatComponent* InCombatComponent);
@@ -69,6 +71,7 @@ private:
 	AActor* GetDroneActor() const;
 	UDroneCompanionConfigDataAsset* GetConfig() const;
 	UDroneCompanionFollowComponent* GetFollowComponent() const;
+	UDroneCompanionMovementComponent* GetMovementComponent() const;
 	UDroneCompanionFeedbackComponent* GetFeedbackComponent() const;
 	UDroneCompanionCombatComponent* GetCombatComponent() const;
 
@@ -85,6 +88,7 @@ private:
 	TWeakObjectPtr<ADroneCompanionPawn> DronePawn;
 	TWeakObjectPtr<UDroneCompanionConfigDataAsset> Config;
 	TWeakObjectPtr<UDroneCompanionFollowComponent> FollowComponent;
+	TWeakObjectPtr<UDroneCompanionMovementComponent> MovementComponent;
 	TWeakObjectPtr<UDroneCompanionSensorComponent> SensorComponent;
 	TWeakObjectPtr<UDroneCompanionFeedbackComponent> FeedbackComponent;
 	TWeakObjectPtr<UDroneCompanionCombatComponent> CombatComponent;

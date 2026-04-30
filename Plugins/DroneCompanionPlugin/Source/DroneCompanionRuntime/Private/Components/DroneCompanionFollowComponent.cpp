@@ -2,6 +2,7 @@
 
 #include "DrawDebugHelpers.h"
 #include "Core/DroneCompanionConfigDataAsset.h"
+#include "Components/DroneCompanionMovementComponent.h"
 #include "GameFramework/Actor.h"
 #include "Math/UnrealMathUtility.h"
 #include "Math/Vector.h"
@@ -31,7 +32,8 @@ void UDroneCompanionFollowComponent::TickComponent(float DeltaTime, ELevelTick T
 
 	AActor* Owner = GetOwner();
 	AActor* Target = GetFollowTarget();
-	if (!bFollowEnabled || !IsValid(Owner) || !IsValid(Target))
+	UDroneCompanionMovementComponent* Movement = MovementComponent.Get();
+	if (!bFollowEnabled || !IsValid(Owner) || !IsValid(Target) || !Movement)
 	{
 		return;
 	}
@@ -46,12 +48,7 @@ void UDroneCompanionFollowComponent::TickComponent(float DeltaTime, ELevelTick T
 		- Target->GetActorForwardVector() * FollowDistance
 		+ FVector(0.0f, 0.0f, FollowHeight);
 
-	const FVector CurrentLocation = Owner->GetActorLocation();
-	if (FVector::DistSquared(CurrentLocation, DesiredLocation) > FMath::Square(AcceptanceRadius))
-	{
-		const FVector NewLocation = FMath::VInterpConstantTo(CurrentLocation, DesiredLocation, DeltaTime, MoveSpeed);
-		Owner->SetActorLocation(NewLocation, false, nullptr, ETeleportType::None);
-	}
+	Movement->MoveTowardLocation(DesiredLocation, MoveSpeed, AcceptanceRadius, DeltaTime);
 
 	if (ConfigAsset && ConfigAsset->bEnableFollowDebug)
 	{
@@ -86,6 +83,11 @@ bool UDroneCompanionFollowComponent::HasValidFollowTarget() const
 void UDroneCompanionFollowComponent::SetConfig(UDroneCompanionConfigDataAsset* NewConfig)
 {
 	Config = NewConfig;
+}
+
+void UDroneCompanionFollowComponent::SetMovementComponent(UDroneCompanionMovementComponent* NewMovementComponent)
+{
+	MovementComponent = NewMovementComponent;
 }
 
 void UDroneCompanionFollowComponent::SetFollowEnabled(bool bEnabled)
