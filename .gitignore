@@ -76,6 +76,7 @@ DerivedDataCache/*
 
 .vs/
 .idea/
+*.DotSettings.user
 .sixth/
 AGENT.md
 .vscode/
