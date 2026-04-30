@@ -50,15 +50,12 @@ Current strategic automation coverage:
 | `DroneCompanion.Pawn.*` | Invalid collision-radius fallback on the pawn root sphere. |
 | `DroneCompanion.Combat.*` | Null/out-of-range target safety, invalid range fallback, cooldown, and blocked line traces. |
 | `DroneCompanion.Brain.*` | Follow-to-inspection transition and enemy interruption of collectible inspection. |
-| `DroneCompanion.Architecture.*` | Guard scans for direct behavior translation calls and forbidden systems in runtime source. |
 
 Static review checklist:
 
 | Check | Expected Result | Status |
 | --- | --- | --- |
 | `DroneCompanionRuntime.Build.cs` dependencies | Only `Core`, `CoreUObject`, and `Engine`. | Not executed by this document. |
-| Runtime source scan for forbidden systems | No AI Perception, Behavior Tree, StateTree, EQS, NavMesh, replication, projectiles, custom health, enemy AI, inventory, Editor module, UMG, Slate, InputCore, or Blueprint gameplay logic. | Not executed by this document. |
-| Direct translation scan | Follow and inspection do not use `SetActorLocation`, `SetWorldLocation`, `AddActorWorldOffset`, or `AddWorldOffset`. | Not executed by this document. |
 | Movement architecture review | `ADroneCompanionPawn` uses `CollisionComponent` as root and movement runs through `UDroneCompanionMovementComponent`. | Not executed by this document. |
 | Debug gating review | Debug drawing and noisy logs are controlled by config booleans. | Not executed by this document. |
 

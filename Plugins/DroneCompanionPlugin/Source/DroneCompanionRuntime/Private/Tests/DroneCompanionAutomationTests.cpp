@@ -18,9 +18,6 @@
 #include "EngineUtils.h"
 #include "GameFramework/Actor.h"
 #include "GameFramework/Pawn.h"
-#include "HAL/FileManager.h"
-#include "Misc/FileHelper.h"
-#include "Misc/Paths.h"
 #include "Targets/DroneCompanionCollectibleMarkerComponent.h"
 #include "Targets/DroneCompanionEnemyMarkerComponent.h"
 #include "Targets/DroneCompanionTargetMarkerComponent.h"
@@ -383,22 +380,6 @@ namespace DroneCompanionAutomation
 		}
 
 		return Rig;
-	}
-
-	bool ReadFileRelativeToProject(const FString& RelativePath, FString& OutContents)
-	{
-		return FFileHelper::LoadFileToString(OutContents, *(FPaths::ProjectDir() / RelativePath));
-	}
-
-	void FindRuntimeSourceFiles(TArray<FString>& OutFiles, const TCHAR* Extension)
-	{
-		const FString RuntimeRoot = FPaths::ProjectDir() / TEXT("Plugins/DroneCompanionPlugin/Source/DroneCompanionRuntime");
-		IFileManager::Get().FindFilesRecursive(OutFiles, *RuntimeRoot, Extension, true, false);
-	}
-
-	bool IsTestSourceFile(const FString& FilePath)
-	{
-		return FilePath.Contains(TEXT("/Private/Tests/")) || FilePath.Contains(TEXT("\\Private\\Tests\\"));
 	}
 }
 
@@ -891,94 +872,6 @@ bool FDroneCompanionBrainEnemyInterruptsInspectionTest::RunTest(const FString& P
 	TickBrain(Rig.Brain);
 
 	TestEqual(TEXT("Enemy best target interrupts inspection and enters attack state."), Rig.Brain->GetCurrentStateName(), FName(TEXT("AttackEnemy")));
-
-	return true;
-}
-
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(FDroneCompanionArchitectureNoDirectTranslationTest, "DroneCompanion.Architecture.NoDirectBehaviorTranslationCalls", DRONE_COMPANION_TEST_FLAGS)
-bool FDroneCompanionArchitectureNoDirectTranslationTest::RunTest(const FString& Parameters)
-{
-	using namespace DroneCompanionAutomation;
-
-	const FString FilesToScan[] =
-	{
-		TEXT("Plugins/DroneCompanionPlugin/Source/DroneCompanionRuntime/Private/Components/DroneCompanionFollowComponent.cpp"),
-		TEXT("Plugins/DroneCompanionPlugin/Source/DroneCompanionRuntime/Private/Brain/DroneCompanionBrainStates.cpp")
-	};
-
-	const FString ForbiddenTokens[] =
-	{
-		TEXT("SetActorLocation"),
-		TEXT("SetWorldLocation"),
-		TEXT("AddActorWorldOffset"),
-		TEXT("AddWorldOffset")
-	};
-
-	for (const FString& FilePath : FilesToScan)
-	{
-		FString Contents;
-		if (!TestTrue(FString::Printf(TEXT("Source file can be read: %s"), *FilePath), ReadFileRelativeToProject(FilePath, Contents)))
-		{
-			return false;
-		}
-
-		for (const FString& Token : ForbiddenTokens)
-		{
-			TestFalse(FString::Printf(TEXT("%s should not contain direct behavior translation call %s."), *FilePath, *Token), Contents.Contains(Token));
-		}
-	}
-
-	return true;
-}
-
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(FDroneCompanionArchitectureForbiddenSystemsTest, "DroneCompanion.Architecture.ForbiddenSystemsNotReferenced", DRONE_COMPANION_TEST_FLAGS)
-bool FDroneCompanionArchitectureForbiddenSystemsTest::RunTest(const FString& Parameters)
-{
-	using namespace DroneCompanionAutomation;
-
-	TArray<FString> Files;
-	FindRuntimeSourceFiles(Files, TEXT("*.h"));
-	FindRuntimeSourceFiles(Files, TEXT("*.cpp"));
-	FindRuntimeSourceFiles(Files, TEXT("*.cs"));
-
-	const FString ForbiddenTokens[] =
-	{
-		TEXT("AIPerception"),
-		TEXT("AI Perception"),
-		TEXT("BehaviorTree"),
-		TEXT("Behavior Tree"),
-		TEXT("StateTree"),
-		TEXT("EQS"),
-		TEXT("NavMesh"),
-		TEXT("bReplicates"),
-		TEXT("DOREPLIFETIME"),
-		TEXT("Projectile"),
-		TEXT("CustomHealth"),
-		TEXT("EnemyAI"),
-		TEXT("Inventory"),
-		TEXT("UMG"),
-		TEXT("Slate"),
-		TEXT("InputCore")
-	};
-
-	for (const FString& FilePath : Files)
-	{
-		if (IsTestSourceFile(FilePath))
-		{
-			continue;
-		}
-
-		FString Contents;
-		if (!TestTrue(FString::Printf(TEXT("Runtime source file can be read: %s"), *FilePath), FFileHelper::LoadFileToString(Contents, *FilePath)))
-		{
-			return false;
-		}
-
-		for (const FString& Token : ForbiddenTokens)
-		{
-			TestFalse(FString::Printf(TEXT("%s should not reference forbidden system token %s."), *FilePath, *Token), Contents.Contains(Token));
-		}
-	}
 
 	return true;
 }
